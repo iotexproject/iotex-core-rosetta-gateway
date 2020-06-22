@@ -50,24 +50,18 @@ tests/rosetta-cli: tests/rosetta-cli.tar.gz
 	@echo "$(MAGENTA)*** Building rosetta-cli...$(OFF)\n"
 	@tar -xf $< -C tests
 	@cd tests/rosetta-cli-$(ROSETTA_CLI_RELEASE) && go build
-	@cp tests/rosetta-cli-$(ROSETTA_CLI_RELEASE)/rosetta-cli tests/.
-
-.PHONY: test2
-test2: build tests/rosetta-cli
-	@echo "Running tests...\n"
-	@chmod +x ./tests/test.sh
-	@./tests/test.sh
+	@cp tests/rosetta-cli-$(ROSETTA_CLI_RELEASE)/rosetta-cli tests
 
 .PHONY: test
-test:
+test: build tests/rosetta-cli
 	@echo "Running tests...\n"
-	@chmod +x ./tests/testcurl.sh
-	@./tests/testcurl.sh
+	@chmod +x ./tests/test.sh
+	@cd tests&&./test.sh&&chmod -x ./test.sh
 
 .PHONY: clean
 clean:
 	@echo "Cleaning..."
-	@rm -rf ./tests/rosetta-cli.tar.gz tests/rosetta-cli
+	@rm -rf ./tests/rosetta*
 	@rm -rf ./$(BUILD_TARGET_SERVER)
 	@rm -rf $(COV_REPORT) $(COV_HTML) $(LINT_LOG)
 	@find . -name $(COV_OUT) -delete

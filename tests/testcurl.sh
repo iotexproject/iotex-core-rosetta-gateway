@@ -32,14 +32,6 @@ curl -X POST --data '{
 curl -X POST --data '{
     "network_identifier": {
         "blockchain": "IoTex",
-        "network": "testnet"},
-    "block_identifier": {"index": 390873}}' http://127.0.0.1:8080/block
-#response:
-#{"block":{"block_identifier":{"index":390873,"hash":"5c084459315fcf0839ed9f2d8b89ca8fb039695a56007a071e5ce9d3c8908d95"},"parent_block_identifier":{"index":390872,"hash":"3ae76de97535f4908d7dd6b2d5f232543b1e5a9fe80a0e9d8f91fdd27d9363eb"},"timestamp":1573620900000,"transactions":[{"transaction_identifier":{"hash":"b37d5db44bd3dc182617b56744e12cab94486808eae1dc401599b611ed388164"},"operations":[{"operation_identifier":{"index":0},"type":"transfer","status":"succeed","account":{"address":"io1ph0u2psnd7muq5xv9623rmxdsxc4uapxhzpg02"},"amount":{"value":"-10010000000000000000","currency":{"symbol":"IoTex","decimals":18}}},{"operation_identifier":{"index":1},"type":"transfer","status":"succeed","account":{"address":"io1vdtfpzkwpyngzvx7u2mauepnzja7kd5rryp0sg"},"amount":{"value":"10000000000000000000","currency":{"symbol":"IoTex","decimals":18}}}]},null]}}
-
-curl -X POST --data '{
-    "network_identifier": {
-        "blockchain": "IoTex",
         "network": "testnet"
     },
     "options": {"id":"io1vdtfpzkwpyngzvx7u2mauepnzja7kd5rryp0sg"}
@@ -55,3 +47,28 @@ curl -X POST --data '{
 }' http://127.0.0.1:8080/construction/submit
 #response:
 #{"transaction_identifier":{"hash":"292cda920534be56c78d6f13686dc7dbb94b77714b93abefb9f1e18679e2ae27"}}
+
+# transfer action
+curl -X POST --data '{
+    "network_identifier": {
+        "blockchain": "IoTex",
+        "network": "testnet"},
+    "block_identifier": {"index": 390873}}' http://127.0.0.1:8080/block
+#response:
+#{"block":{"block_identifier":{"index":390873,"hash":"5c084459315fcf0839ed9f2d8b89ca8fb039695a56007a071e5ce9d3c8908d95"},"parent_block_identifier":{"index":390872,"hash":"3ae76de97535f4908d7dd6b2d5f232543b1e5a9fe80a0e9d8f91fdd27d9363eb"},"timestamp":1573620900000,"transactions":[{"transaction_identifier":{"hash":"b37d5db44bd3dc182617b56744e12cab94486808eae1dc401599b611ed388164"},"operations":[{"operation_identifier":{"index":0},"type":"fee","status":"success","account":{"address":"io1ph0u2psnd7muq5xv9623rmxdsxc4uapxhzpg02"},"amount":{"value":"-10000000000000000","currency":{"symbol":"IoTex","decimals":18}}},{"operation_identifier":{"index":1},"type":"transfer","status":"success","account":{"address":"io1ph0u2psnd7muq5xv9623rmxdsxc4uapxhzpg02"},"amount":{"value":"-10000000000000000000","currency":{"symbol":"IoTex","decimals":18}}},{"operation_identifier":{"index":2},"type":"transfer","status":"success","account":{"address":"io1vdtfpzkwpyngzvx7u2mauepnzja7kd5rryp0sg"},"amount":{"value":"10000000000000000000","currency":{"symbol":"IoTex","decimals":18}}}]}]}}
+
+# Execution multisend
+curl -X POST --data '{
+    "network_identifier": {
+        "blockchain": "IoTex",
+        "network": "testnet"},
+    "block_identifier": {"index": 4032647}}' http://127.0.0.1:8080/block
+
+# stakeCreate action
+curl -X POST --data '{
+    "network_identifier": {
+        "blockchain": "IoTex",
+        "network": "testnet"},
+    "block_identifier": {"index": 4034780}}' http://127.0.0.1:8080/block
+#response:
+#{"block":{"block_identifier":{"index":4034780,"hash":"bc1ad74d423f84e553602798e86019254b70d4499f1738a11c285ab9e31ea3b2"},"parent_block_identifier":{"index":4034779,"hash":"ac25b97cb7c9743b496cf45586d442ae4777753c77ca08d539bb96f30bca08c6"},"timestamp":1592801095000,"transactions":[{"transaction_identifier":{"hash":"9f261c47ad6611388c8e4569d2db378d2a7d98607c4259f5f9819ae6703742e6"},"operations":[{"operation_identifier":{"index":0},"type":"fee","status":"success","account":{"address":"io1mflp9m6hcgm2qcghchsdqj3z3eccrnekx9p0ms"},"amount":{"value":"-10000000000000000","currency":{"symbol":"Iotx","decimals":18}}},{"operation_identifier":{"index":1},"type":"stakeCreate","status":"success","account":{"address":"io1mflp9m6hcgm2qcghchsdqj3z3eccrnekx9p0ms"},"amount":{"value":"-100000000000000000000","currency":{"symbol":"Iotx","decimals":18}}}]}]}}

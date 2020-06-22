@@ -1,9 +1,14 @@
+// Copyright (c) 2020 IoTeX Foundation
+// This is an alpha (internal) release and is not suitable for production. This source code is provided 'as is' and no
+// warranties are given as to title or non-infringement, merchantability or fitness for purpose and, to the extent
+// permitted by law, all liability for your use of the code is disclaimed. This source code is governed by Apache
+// License 2.0 that can be found in the LICENSE file.
+
 package services
 
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 
 	"github.com/coinbase/rosetta-sdk-go/server"
 	"github.com/coinbase/rosetta-sdk-go/types"
@@ -92,7 +97,6 @@ func (s *constructionAPIService) ConstructionSubmit(
 	}
 	txID, err := s.client.SubmitTx(ctx, &act)
 	if err != nil {
-		fmt.Println(err)
 		return nil, ErrUnableToSubmitTx
 	}
 

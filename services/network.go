@@ -1,8 +1,13 @@
+// Copyright (c) 2020 IoTeX Foundation
+// This is an alpha (internal) release and is not suitable for production. This source code is provided 'as is' and no
+// warranties are given as to title or non-infringement, merchantability or fitness for purpose and, to the extent
+// permitted by law, all liability for your use of the code is disclaimed. This source code is governed by Apache
+// License 2.0 that can be found in the LICENSE file.
+
 package services
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/coinbase/rosetta-sdk-go/server"
 	"github.com/coinbase/rosetta-sdk-go/types"
@@ -62,8 +67,8 @@ func (s *networkAPIService) NetworkStatus(
 		},
 		CurrentBlockTimestamp: blk.Timestamp, // ms
 		GenesisBlockIdentifier: &types.BlockIdentifier{
-			Index: 1,
-			Hash:  "",
+			Index: s.client.GetConfig().Genesis_block_identifier.Index,
+			Hash:  s.client.GetConfig().Genesis_block_identifier.Hash,
 		},
 		Peers: nil,
 	}
@@ -82,7 +87,6 @@ func (s *networkAPIService) NetworkOptions(
 	}
 
 	version, err := s.client.GetVersion(ctx)
-	fmt.Println(version, err)
 	if err != nil {
 		return nil, ErrUnableToGetNodeStatus
 	}
@@ -95,12 +99,25 @@ func (s *networkAPIService) NetworkOptions(
 		Allow: &types.Allow{
 			OperationStatuses: []*types.OperationStatus{
 				{
-					Status:     "OK",
+					Status:     ic.StatusSuccess,
 					Successful: true,
 				},
+				{
+					Status:     ic.StatusFail,
+					Successful: false,
+				},
 			},
-			OperationTypes: []string{"transfer"},
-			Errors:         ErrorList,
+			OperationTypes: []string{
+				ic.ActionTypeFee,
+				ic.Transfer,
+				ic.Execution,
+				ic.DepositToRewardingFund,
+				ic.ClaimFromRewardingFund,
+				ic.StakeCreate,
+				ic.StakeWithdraw,
+				ic.StakeAddDeposit,
+				ic.CandidateRegister},
+			Errors: ErrorList,
 		},
 	}, nil
 }

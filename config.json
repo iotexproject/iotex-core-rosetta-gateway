@@ -1,7 +1,7 @@
 {
     "genesis_block_identifier": {
         "index": 1,
-        "hash": "230ba8095d5a505e355652f9dcc2b13605419a8fa3d3fd5ddc6d24fd6a902641"
+        "hash": "663fc0a40a4943f1b56f501aee3ad626b5396e850aa53c5bd8759d0d47694dfc"
     },
     "network_identifier": {
         "blockchain": "IoTex",
