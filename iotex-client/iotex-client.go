@@ -9,19 +9,26 @@ package iotex_client
 import (
 	"context"
 	"crypto/tls"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"math/big"
 	"sort"
 	"sync"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/gogo/protobuf/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/iotexproject/iotex-core-rosetta-gateway/config"
+	"github.com/iotexproject/go-pkgs/crypto"
+	"github.com/iotexproject/go-pkgs/hash"
+	"github.com/iotexproject/iotex-address/address"
 	"github.com/iotexproject/iotex-proto/golang/iotexapi"
 	"github.com/iotexproject/iotex-proto/golang/iotextypes"
+
+	"github.com/iotexproject/iotex-core-rosetta-gateway/config"
 )
 
 const (
@@ -152,35 +159,38 @@ func (c *grpcIoTexClient) GetAccount(ctx context.Context, height int64, owner st
 }
 
 func (c *grpcIoTexClient) GetTransactions(ctx context.Context, height int64) (ret []*types.Transaction, err error) {
-	blk, err := c.getBlock(ctx, height)
-	if err != nil {
+	client := iotexapi.NewAPIServiceClient(c.grpcConn)
+	getRawBlocksRes, err := client.GetRawBlocks(context.Background(), &iotexapi.GetRawBlocksRequest{
+		StartHeight:  uint64(height),
+		Count:        1,
+		WithReceipts: true,
+	})
+	if err != nil || len(getRawBlocksRes.GetBlocks()) != 1 {
 		return
 	}
-	client := iotexapi.NewAPIServiceClient(c.grpcConn)
-	// this limit is from iotex-core's default value
-	limit := uint64(1000)
-	var actionInfo []*iotexapi.ActionInfo
-	for i := uint64(0); ; i++ {
-		request := &iotexapi.GetActionsRequest{
-			Lookup: &iotexapi.GetActionsRequest_ByBlk{
-				ByBlk: &iotexapi.GetActionsByBlockRequest{
-					BlkHash: blk.Hash,
-					Start:   i * limit,
-					Count:   limit,
-				},
-			},
-		}
-		res, err := client.GetActions(ctx, request)
-		if err != nil {
-			break
-		}
-		actionInfo = append(actionInfo, res.ActionInfo...)
-	}
 	ret = make([]*types.Transaction, 0)
-	for _, act := range actionInfo {
-		decode, err := c.decodeAction(ctx, act, client)
+	actionMap := make(map[hash.Hash256]*iotextypes.Action)
+	receiptMap := make(map[hash.Hash256]*iotextypes.Receipt)
+	blk := getRawBlocksRes.GetBlocks()[0]
+	for _, act := range blk.GetBlock().GetBody().GetActions() {
+		proto, err := proto.Marshal(act)
 		if err != nil {
-			// change to continue when systemlog is disabled in testnet
+			return nil, err
+		}
+		actionMap[hash.Hash256b(proto)] = act
+	}
+	for _, receipt := range blk.GetReceipts() {
+		receiptMap[hash.BytesToHash256(receipt.ActHash)] = receipt
+	}
+	for h, act := range actionMap {
+		r, ok := receiptMap[h]
+		if !ok {
+			err = errors.New(fmt.Sprintf("failed find receipt:%s", hex.EncodeToString(h[:])))
+			return
+		}
+		decode, err := c.decodeAction(ctx, act, h, r, client)
+		if err != nil {
+			// change to continue or return when systemlog is enabled in testnet
 			// TODO change it back
 			//return nil, err
 			continue
@@ -288,15 +298,23 @@ func (c *grpcIoTexClient) reconnect() (err error) {
 	return err
 }
 
-func (c *grpcIoTexClient) decodeAction(ctx context.Context, act *iotexapi.ActionInfo, client iotexapi.APIServiceClient) (ret *types.Transaction, err error) {
-	ret, status, err := c.gasFeeAndStatus(ctx, act, client)
+func (c *grpcIoTexClient) decodeAction(ctx context.Context, act *iotextypes.Action, h hash.Hash256, receipt *iotextypes.Receipt, client iotexapi.APIServiceClient) (ret *types.Transaction, err error) {
+	srcPub, err := crypto.BytesToPublicKey(act.GetSenderPubKey())
+	if err != nil {
+		return
+	}
+	callerAddr, err := address.FromBytes(srcPub.Hash())
+	if err != nil {
+		return
+	}
+	ret, status, err := c.gasFeeAndStatus(callerAddr, act, h, receipt)
 	if err != nil {
 		return
 	}
 
-	if act.GetAction().GetCore().GetExecution() != nil {
+	if act.GetCore().GetExecution() != nil {
 		// TODO test when testnet enable systemlog
-		err = c.handleExecution(ctx, ret, status, act.ActHash, client)
+		err = c.handleExecution(ctx, ret, status, hex.EncodeToString(h[:]), client)
 		return
 	}
 
@@ -315,7 +333,7 @@ func (c *grpcIoTexClient) decodeAction(ctx context.Context, act *iotexapi.Action
 		senderAmountWithSign = amount
 		dstAmountWithSign = "-" + amount
 	}
-	src := []*addressAmount{{address: act.Sender, amount: senderAmountWithSign}}
+	src := []*addressAmount{{address: callerAddr.String(), amount: senderAmountWithSign}}
 	var dstAll []*addressAmount
 	if dst != "" {
 		dstAll = []*addressAmount{{address: dst, amount: dstAmountWithSign}}
@@ -346,19 +364,13 @@ func (c *grpcIoTexClient) handleExecution(ctx context.Context, ret *types.Transa
 	return c.packTransaction(ret, src, dst, Execution, status)
 }
 
-func (c *grpcIoTexClient) gasFeeAndStatus(ctx context.Context, act *iotexapi.ActionInfo, client iotexapi.APIServiceClient) (ret *types.Transaction, status string, err error) {
-	requestGetReceipt := &iotexapi.GetReceiptByActionRequest{ActionHash: act.GetActHash()}
-	responseReceipt, err := client.GetReceiptByAction(ctx, requestGetReceipt)
-	if err != nil {
-		return
-	}
+func (c *grpcIoTexClient) gasFeeAndStatus(callerAddr address.Address, act *iotextypes.Action, h hash.Hash256, receipt *iotextypes.Receipt) (ret *types.Transaction, status string, err error) {
 	status = StatusSuccess
-	if responseReceipt.GetReceiptInfo().GetReceipt().GetStatus() != 1 {
+	if receipt.GetStatus() != 1 {
 		status = StatusFail
 	}
-
-	gasConsumed := new(big.Int).SetUint64(responseReceipt.GetReceiptInfo().GetReceipt().GetGasConsumed())
-	gasPrice, ok := new(big.Int).SetString(act.GetAction().GetCore().GetGasPrice(), 10)
+	gasConsumed := new(big.Int).SetUint64(receipt.GetGasConsumed())
+	gasPrice, ok := new(big.Int).SetString(act.GetCore().GetGasPrice(), 10)
 	if !ok {
 		err = errors.New("convert gas price error")
 		return
@@ -366,17 +378,17 @@ func (c *grpcIoTexClient) gasFeeAndStatus(ctx context.Context, act *iotexapi.Act
 	gasFee := gasPrice.Mul(gasPrice, gasConsumed)
 	// if gasFee is 0
 	if gasFee.Sign() != 1 {
-		return nil, "", nil
+		return
 	}
-	sender := addressAmountList{{address: act.Sender, amount: "-" + gasFee.String()}}
+	sender := addressAmountList{{address: callerAddr.String(), amount: "-" + gasFee.String()}}
 	var oper []*types.Operation
 	_, oper, err = c.addOperation(sender, ActionTypeFee, status, 0, oper)
 	if err != nil {
-		return nil, "", err
+		return
 	}
 	ret = &types.Transaction{
 		TransactionIdentifier: &types.TransactionIdentifier{
-			act.ActHash,
+			hex.EncodeToString(h[:]),
 		},
 		Operations: oper,
 		Metadata:   nil,
@@ -431,33 +443,33 @@ func (c *grpcIoTexClient) addOperation(l addressAmountList, actionType, status s
 	return startIndex, oper, nil
 }
 
-func assertAction(act *iotexapi.ActionInfo) (amount, senderSign, actionType, dst string, err error) {
+func assertAction(act *iotextypes.Action) (amount, senderSign, actionType, dst string, err error) {
 	amount = "0"
 	senderSign = "-"
 	switch {
-	case act.GetAction().GetCore().GetTransfer() != nil:
+	case act.GetCore().GetTransfer() != nil:
 		actionType = Transfer
-		amount = act.GetAction().GetCore().GetTransfer().GetAmount()
-		dst = act.GetAction().GetCore().GetTransfer().GetRecipient()
-	case act.GetAction().GetCore().GetDepositToRewardingFund() != nil:
+		amount = act.GetCore().GetTransfer().GetAmount()
+		dst = act.GetCore().GetTransfer().GetRecipient()
+	case act.GetCore().GetDepositToRewardingFund() != nil:
 		actionType = DepositToRewardingFund
-		amount = act.GetAction().GetCore().GetDepositToRewardingFund().GetAmount()
-	case act.GetAction().GetCore().GetClaimFromRewardingFund() != nil:
+		amount = act.GetCore().GetDepositToRewardingFund().GetAmount()
+	case act.GetCore().GetClaimFromRewardingFund() != nil:
 		actionType = ClaimFromRewardingFund
-		amount = act.GetAction().GetCore().GetClaimFromRewardingFund().GetAmount()
+		amount = act.GetCore().GetClaimFromRewardingFund().GetAmount()
 		senderSign = "+"
-	case act.GetAction().GetCore().GetStakeAddDeposit() != nil:
+	case act.GetCore().GetStakeAddDeposit() != nil:
 		actionType = StakeAddDeposit
-		amount = act.GetAction().GetCore().GetClaimFromRewardingFund().GetAmount()
-	case act.GetAction().GetCore().GetStakeCreate() != nil:
+		amount = act.GetCore().GetClaimFromRewardingFund().GetAmount()
+	case act.GetCore().GetStakeCreate() != nil:
 		actionType = StakeCreate
-		amount = act.GetAction().GetCore().GetStakeCreate().GetStakedAmount()
-	case act.GetAction().GetCore().GetStakeWithdraw() != nil:
+		amount = act.GetCore().GetStakeCreate().GetStakedAmount()
+	case act.GetCore().GetStakeWithdraw() != nil:
 		// TODO need to add amount when it's available on iotex-core
 		actionType = StakeWithdraw
-	case act.GetAction().GetCore().GetCandidateRegister() != nil:
+	case act.GetCore().GetCandidateRegister() != nil:
 		actionType = CandidateRegister
-		amount = act.GetAction().GetCore().GetCandidateRegister().GetStakedAmount()
+		amount = act.GetCore().GetCandidateRegister().GetStakedAmount()
 	}
 	return
 }

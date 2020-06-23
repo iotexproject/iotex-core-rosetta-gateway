@@ -4,8 +4,9 @@ go 1.13
 
 require (
 	github.com/coinbase/rosetta-sdk-go v0.1.5
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gogo/protobuf v1.2.1
+	github.com/iotexproject/go-pkgs v0.1.1
+	github.com/iotexproject/iotex-address v0.2.1
 	github.com/iotexproject/iotex-proto v0.3.0
 	github.com/pkg/errors v0.8.1
 	go.uber.org/atomic v1.4.0 // indirect
