@@ -13,18 +13,13 @@ import (
 
 	"github.com/coinbase/rosetta-sdk-go/server"
 
+	"github.com/iotexproject/iotex-core-rosetta-gateway/config"
 	ic "github.com/iotexproject/iotex-core-rosetta-gateway/iotex-client"
 	"github.com/iotexproject/iotex-core-rosetta-gateway/services"
 )
 
 const (
-	// GatewayPort is the name of the environment variable that specifies
-	// which port the IoTex Rosetta gateway should run on.
-	GatewayPort = "GatewayPort"
-	// IoTexChainPoint is the name of the environment variable that specifies
-	// which the IoTex blockchain endpoint.
-	IoTexChainPoint = "IoTexChainPoint"
-	ConfigPath      = "ConfigPath"
+	ConfigPath = "ConfigPath"
 )
 
 // NewBlockchainRouter returns a Mux http.Handler from a collection of
@@ -38,23 +33,17 @@ func NewBlockchainRouter(client ic.IoTexClient) http.Handler {
 }
 
 func main() {
-	// Get server port from environment variable or use the default.
-	port := os.Getenv(GatewayPort)
-	if port == "" {
-		port = "8080"
-	}
-	addr := os.Getenv(IoTexChainPoint)
-	if addr == "" {
-		fmt.Fprintf(os.Stderr, "ERROR: %s environment variable missing\n", IoTexChainPoint)
-		os.Exit(1)
-	}
 	configPath := os.Getenv(ConfigPath)
 	if configPath == "" {
-		configPath = "config.json"
+		configPath = "config.yaml"
 	}
-
+	cfg, err := config.New(configPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "ERROR: Failed to parse config: %v\n", err)
+		os.Exit(1)
+	}
 	// Prepare a new gRPC client.
-	client, err := ic.NewIoTexClient(addr, configPath)
+	client, err := ic.NewIoTexClient(cfg)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: Failed to prepare IoTex gRPC client: %v\n", err)
 		os.Exit(1)
@@ -62,8 +51,8 @@ func main() {
 
 	// Start the server.
 	router := NewBlockchainRouter(client)
-	fmt.Println("listen", "0.0.0.0:"+port)
-	err = http.ListenAndServe("0.0.0.0:"+port, router)
+	fmt.Println("listen", "0.0.0.0:"+cfg.Server.Port)
+	err = http.ListenAndServe("0.0.0.0:"+cfg.Server.Port, router)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "IoTex Rosetta Gateway server exited with error: %v\n", err)
 		os.Exit(1)

@@ -35,6 +35,7 @@ func (s *accountAPIService) AccountBalance(
 	if terr != nil {
 		return nil, terr
 	}
+	// TODO fix this when we have archive mode
 	acc, err := s.client.GetAccount(ctx, 0, request.AccountIdentifier.Address)
 	if err != nil {
 		return nil, ErrUnableToGetAccount
@@ -54,8 +55,12 @@ func (s *accountAPIService) AccountBalance(
 		},
 		Balances: []*types.Amount{
 			&types.Amount{
-				Value:    acc.Balance,
-				Currency: IoTexCurrency,
+				Value: acc.Balance,
+				Currency: &types.Currency{
+					Symbol:   s.client.GetConfig().Currency.Symbol,
+					Decimals: s.client.GetConfig().Currency.Decimals,
+					Metadata: nil,
+				},
 			},
 		},
 		Metadata: &md,

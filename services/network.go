@@ -33,8 +33,8 @@ func (s *networkAPIService) NetworkList(
 ) (*types.NetworkListResponse, *types.Error) {
 	return &types.NetworkListResponse{
 		NetworkIdentifiers: []*types.NetworkIdentifier{{
-			Blockchain: s.client.GetConfig().Network_identifier.Blockchain,
-			Network:    s.client.GetConfig().Network_identifier.Network,
+			Blockchain: s.client.GetConfig().NetworkIdentifier.Blockchain,
+			Network:    s.client.GetConfig().NetworkIdentifier.Network,
 		},
 		},
 	}, nil
@@ -59,7 +59,10 @@ func (s *networkAPIService) NetworkStatus(
 	if err != nil {
 		return nil, ErrUnableToGetNodeStatus
 	}
-
+	genesisblk, err := s.client.GetBlock(ctx, 1)
+	if err != nil {
+		return nil, ErrUnableToGetNodeStatus
+	}
 	resp := &types.NetworkStatusResponse{
 		CurrentBlockIdentifier: &types.BlockIdentifier{
 			Index: hei,
@@ -67,8 +70,8 @@ func (s *networkAPIService) NetworkStatus(
 		},
 		CurrentBlockTimestamp: blk.Timestamp, // ms
 		GenesisBlockIdentifier: &types.BlockIdentifier{
-			Index: s.client.GetConfig().Genesis_block_identifier.Index,
-			Hash:  s.client.GetConfig().Genesis_block_identifier.Hash,
+			Index: genesisblk.Height,
+			Hash:  genesisblk.Hash,
 		},
 		Peers: nil,
 	}
@@ -93,7 +96,7 @@ func (s *networkAPIService) NetworkOptions(
 
 	return &types.NetworkOptionsResponse{
 		Version: &types.Version{
-			RosettaVersion: "1.3.5",
+			RosettaVersion: s.client.GetConfig().Server.RosettaVersion,
 			NodeVersion:    version.GetServerMeta().GetPackageVersion(),
 		},
 		Allow: &types.Allow{

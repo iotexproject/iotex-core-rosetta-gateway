@@ -4,7 +4,7 @@
       "address":"io10t7juxazfteqzjsd6qjk7tkgmngj2tm7n4fvrd"
     },
     "currency":{
-      "symbol":"Iotx",
+      "symbol":"IOTX",
       "decimals":18
     },
     "value": "1000000000000000000000000000"
@@ -14,7 +14,7 @@
       "address":"io120au9ra0nffdle04jx2g5gccn6gq8qd4fy03l4"
     },
     "currency":{
-      "symbol":"Iotx",
+      "symbol":"IOTX",
       "decimals":18
     },
     "value": "7000000000000000000000000000"
@@ -24,7 +24,7 @@
       "address":"io1yrzvkucxpytn4fru35lc8r8jk4jtue4syg8d4h"
     },
     "currency":{
-      "symbol":"Iotx",
+      "symbol":"IOTX",
       "decimals":18
     },
     "value": "800000000000000000000000000"

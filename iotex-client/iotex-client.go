@@ -9,9 +9,7 @@ package iotex_client
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"math/big"
 	"sort"
 	"sync"
@@ -21,6 +19,7 @@ import (
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
 
+	"github.com/iotexproject/iotex-core-rosetta-gateway/config"
 	"github.com/iotexproject/iotex-proto/golang/iotexapi"
 	"github.com/iotexproject/iotex-proto/golang/iotextypes"
 )
@@ -39,24 +38,7 @@ const (
 	ActionTypeFee          = "fee"
 )
 
-var IoTexCurrency = &types.Currency{
-	Symbol:   "Iotx",
-	Decimals: 18,
-}
-
 type (
-	Genesis struct {
-		Index int64  `json: "index"`
-		Hash  string `json: "hash"`
-	}
-	NetworkIdentifier struct {
-		Blockchain string `json: "blockchain"`
-		Network    string `json: "network"`
-	}
-	Config struct {
-		Genesis_block_identifier Genesis           `json: "genesis_block_identifier"`
-		Network_identifier       NetworkIdentifier `json: "network_identifier"`
-	}
 	// IoTexClient is the IoTex blockchain client interface.
 	IoTexClient interface {
 		// GetChainID returns the network chain context, derived from the
@@ -89,7 +71,7 @@ type (
 		GetTransactions(ctx context.Context, height int64) ([]*types.Transaction, error)
 
 		// GetConfig returns the config.
-		GetConfig() *Config
+		GetConfig() *config.Config
 	}
 
 	// IoTexBlock is the IoTex blockchain's block.
@@ -112,42 +94,29 @@ type (
 
 		endpoint string
 		grpcConn *grpc.ClientConn
-		cfg      *Config
+		cfg      *config.Config
 	}
 )
 
 // NewIoTexClient returns an implementation of IoTexClient
-func NewIoTexClient(grpcAddr string, cfgPath string) (cli IoTexClient, err error) {
-	file, err := ioutil.ReadFile(cfgPath)
+func NewIoTexClient(cfg *config.Config) (cli IoTexClient, err error) {
+	grpc, err := grpc.Dial(cfg.Server.Endpoint, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
 	if err != nil {
 		return
 	}
-	cfg := &Config{}
-	err = json.Unmarshal(file, &cfg)
-	if err != nil {
-		return
-	}
-	grpc, err := grpc.Dial(grpcAddr, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
-	if err != nil {
-		return
-	}
-	cli = &grpcIoTexClient{endpoint: grpcAddr, grpcConn: grpc, cfg: cfg}
+	cli = &grpcIoTexClient{grpcConn: grpc, cfg: cfg}
 	return
 }
 
 func (c *grpcIoTexClient) GetChainID(ctx context.Context) (string, error) {
-	return c.cfg.Network_identifier.Network, nil
+	return c.cfg.NetworkIdentifier.Network, nil
 }
 
 func (c *grpcIoTexClient) GetBlock(ctx context.Context, height int64) (ret *IoTexBlock, err error) {
-	c.Lock()
-	defer c.Unlock()
 	return c.getBlock(ctx, height)
 }
 
 func (c *grpcIoTexClient) GetLatestBlock(ctx context.Context) (*IoTexBlock, error) {
-	c.Lock()
-	defer c.Unlock()
 	err := c.reconnect()
 	if err != nil {
 		return nil, err
@@ -161,14 +130,10 @@ func (c *grpcIoTexClient) GetLatestBlock(ctx context.Context) (*IoTexBlock, erro
 }
 
 func (c *grpcIoTexClient) GetGenesisBlock(ctx context.Context) (*IoTexBlock, error) {
-	c.Lock()
-	defer c.Unlock()
-	return c.getBlock(ctx, c.cfg.Genesis_block_identifier.Index)
+	return c.getBlock(ctx, 1)
 }
 
 func (c *grpcIoTexClient) GetAccount(ctx context.Context, height int64, owner string) (ret *Account, err error) {
-	c.Lock()
-	defer c.Unlock()
 	err = c.reconnect()
 	if err != nil {
 		return
@@ -187,8 +152,6 @@ func (c *grpcIoTexClient) GetAccount(ctx context.Context, height int64, owner st
 }
 
 func (c *grpcIoTexClient) GetTransactions(ctx context.Context, height int64) (ret []*types.Transaction, err error) {
-	c.Lock()
-	defer c.Unlock()
 	blk, err := c.getBlock(ctx, height)
 	if err != nil {
 		return
@@ -215,7 +178,7 @@ func (c *grpcIoTexClient) GetTransactions(ctx context.Context, height int64) (re
 	}
 	ret = make([]*types.Transaction, 0)
 	for _, act := range actionInfo {
-		decode, err := decodeAction(ctx, act, client)
+		decode, err := c.decodeAction(ctx, act, client)
 		if err != nil {
 			// change to continue when systemlog is disabled in testnet
 			// TODO change it back
@@ -230,8 +193,6 @@ func (c *grpcIoTexClient) GetTransactions(ctx context.Context, height int64) (re
 }
 
 func (c *grpcIoTexClient) SubmitTx(ctx context.Context, tx *iotextypes.Action) (txid string, err error) {
-	c.Lock()
-	defer c.Unlock()
 	err = c.reconnect()
 	if err != nil {
 		return
@@ -246,8 +207,6 @@ func (c *grpcIoTexClient) SubmitTx(ctx context.Context, tx *iotextypes.Action) (
 }
 
 func (c *grpcIoTexClient) GetStatus(ctx context.Context) (*iotexapi.GetChainMetaResponse, error) {
-	c.Lock()
-	defer c.Unlock()
 	err := c.reconnect()
 	if err != nil {
 		return nil, err
@@ -257,8 +216,6 @@ func (c *grpcIoTexClient) GetStatus(ctx context.Context) (*iotexapi.GetChainMeta
 }
 
 func (c *grpcIoTexClient) GetVersion(ctx context.Context) (*iotexapi.GetServerMetaResponse, error) {
-	c.Lock()
-	defer c.Unlock()
 	err := c.reconnect()
 	if err != nil {
 		return nil, err
@@ -267,7 +224,7 @@ func (c *grpcIoTexClient) GetVersion(ctx context.Context) (*iotexapi.GetServerMe
 	return client.GetServerMeta(ctx, &iotexapi.GetServerMetaRequest{})
 }
 
-func (c *grpcIoTexClient) GetConfig() *Config {
+func (c *grpcIoTexClient) GetConfig() *config.Config {
 	return c.cfg
 }
 
@@ -321,6 +278,8 @@ func (c *grpcIoTexClient) getBlock(ctx context.Context, height int64) (ret *IoTe
 }
 
 func (c *grpcIoTexClient) reconnect() (err error) {
+	c.Lock()
+	defer c.Unlock()
 	// Check if the existing connection is good.
 	if c.grpcConn != nil && c.grpcConn.GetState() != connectivity.Shutdown {
 		return
@@ -329,17 +288,15 @@ func (c *grpcIoTexClient) reconnect() (err error) {
 	return err
 }
 
-func decodeAction(ctx context.Context, act *iotexapi.ActionInfo, client iotexapi.APIServiceClient) (ret *types.
-	Transaction,
-	err error) {
-	ret, status, err := gasFeeAndStatus(ctx, act, client)
+func (c *grpcIoTexClient) decodeAction(ctx context.Context, act *iotexapi.ActionInfo, client iotexapi.APIServiceClient) (ret *types.Transaction, err error) {
+	ret, status, err := c.gasFeeAndStatus(ctx, act, client)
 	if err != nil {
 		return
 	}
 
 	if act.GetAction().GetCore().GetExecution() != nil {
-		// this one need special handler,TODO test when testnet enable systemlog
-		err = handleExecution(ctx, ret, status, act.ActHash, client)
+		// TODO test when testnet enable systemlog
+		err = c.handleExecution(ctx, ret, status, act.ActHash, client)
 		return
 	}
 
@@ -363,12 +320,11 @@ func decodeAction(ctx context.Context, act *iotexapi.ActionInfo, client iotexapi
 	if dst != "" {
 		dstAll = []*addressAmount{{address: dst, amount: dstAmountWithSign}}
 	}
-	err = packTransaction(ret, src, dstAll, actionType, status)
+	err = c.packTransaction(ret, src, dstAll, actionType, status)
 	return
 }
 
-func handleExecution(ctx context.Context, ret *types.Transaction, status, hash string,
-	client iotexapi.APIServiceClient) (err error) {
+func (c *grpcIoTexClient) handleExecution(ctx context.Context, ret *types.Transaction, status, hash string, client iotexapi.APIServiceClient) (err error) {
 	request := &iotexapi.GetEvmTransfersByActionHashRequest{
 		ActionHash: hash,
 	}
@@ -387,10 +343,10 @@ func handleExecution(ctx context.Context, ret *types.Transaction, status, hash s
 			amount:  new(big.Int).SetBytes(transfer.Amount).String(),
 		})
 	}
-	return packTransaction(ret, src, dst, Execution, status)
+	return c.packTransaction(ret, src, dst, Execution, status)
 }
 
-func gasFeeAndStatus(ctx context.Context, act *iotexapi.ActionInfo, client iotexapi.APIServiceClient) (ret *types.Transaction, status string, err error) {
+func (c *grpcIoTexClient) gasFeeAndStatus(ctx context.Context, act *iotexapi.ActionInfo, client iotexapi.APIServiceClient) (ret *types.Transaction, status string, err error) {
 	requestGetReceipt := &iotexapi.GetReceiptByActionRequest{ActionHash: act.GetActHash()}
 	responseReceipt, err := client.GetReceiptByAction(ctx, requestGetReceipt)
 	if err != nil {
@@ -414,7 +370,7 @@ func gasFeeAndStatus(ctx context.Context, act *iotexapi.ActionInfo, client iotex
 	}
 	sender := addressAmountList{{address: act.Sender, amount: "-" + gasFee.String()}}
 	var oper []*types.Operation
-	_, oper, err = addOperation(sender, ActionTypeFee, status, 0, oper)
+	_, oper, err = c.addOperation(sender, ActionTypeFee, status, 0, oper)
 	if err != nil {
 		return nil, "", err
 	}
@@ -428,15 +384,15 @@ func gasFeeAndStatus(ctx context.Context, act *iotexapi.ActionInfo, client iotex
 	return
 }
 
-func packTransaction(ret *types.Transaction, src, dst addressAmountList, actionType, status string) (err error) {
+func (c *grpcIoTexClient) packTransaction(ret *types.Transaction, src, dst addressAmountList, actionType, status string) (err error) {
 	sort.Sort(src)
 	sort.Sort(dst)
 	var oper []*types.Operation
-	endIndex, oper, err := addOperation(src, actionType, status, 1, oper)
+	endIndex, oper, err := c.addOperation(src, actionType, status, 1, oper)
 	if err != nil {
 		return
 	}
-	_, oper, err = addOperation(dst, actionType, status, endIndex, oper)
+	_, oper, err = c.addOperation(dst, actionType, status, endIndex, oper)
 	if err != nil {
 		return
 	}
@@ -444,7 +400,7 @@ func packTransaction(ret *types.Transaction, src, dst addressAmountList, actionT
 	return
 }
 
-func addOperation(l addressAmountList, actionType, status string, startIndex int64, oper []*types.Operation) (int64, []*types.Operation, error) {
+func (c *grpcIoTexClient) addOperation(l addressAmountList, actionType, status string, startIndex int64, oper []*types.Operation) (int64, []*types.Operation, error) {
 	for _, s := range l {
 		oper = append(oper, &types.Operation{
 			OperationIdentifier: &types.OperationIdentifier{
@@ -460,8 +416,12 @@ func addOperation(l addressAmountList, actionType, status string, startIndex int
 				Metadata:   nil,
 			},
 			Amount: &types.Amount{
-				Value:    s.amount,
-				Currency: IoTexCurrency,
+				Value: s.amount,
+				Currency: &types.Currency{
+					Symbol:   c.cfg.Currency.Symbol,
+					Decimals: c.cfg.Currency.Decimals,
+					Metadata: nil,
+				},
 				Metadata: nil,
 			},
 			Metadata: nil,
@@ -494,7 +454,7 @@ func assertAction(act *iotexapi.ActionInfo) (amount, senderSign, actionType, dst
 		amount = act.GetAction().GetCore().GetStakeCreate().GetStakedAmount()
 	case act.GetAction().GetCore().GetStakeWithdraw() != nil:
 		// TODO need to add amount when it's available on iotex-core
-		actionType = StakeCreate
+		actionType = StakeWithdraw
 	case act.GetAction().GetCore().GetCandidateRegister() != nil:
 		actionType = CandidateRegister
 		amount = act.GetAction().GetCore().GetCandidateRegister().GetStakedAmount()
