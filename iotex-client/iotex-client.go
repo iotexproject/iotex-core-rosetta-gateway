@@ -460,7 +460,7 @@ func assertAction(act *iotextypes.Action) (amount, senderSign, actionType, dst s
 		senderSign = "+"
 	case act.GetCore().GetStakeAddDeposit() != nil:
 		actionType = StakeAddDeposit
-		amount = act.GetCore().GetClaimFromRewardingFund().GetAmount()
+		amount = act.GetCore().GetStakeAddDeposit().GetAmount()
 	case act.GetCore().GetStakeCreate() != nil:
 		actionType = StakeCreate
 		amount = act.GetCore().GetStakeCreate().GetStakedAmount()
