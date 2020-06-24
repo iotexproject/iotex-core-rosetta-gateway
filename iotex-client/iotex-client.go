@@ -171,6 +171,8 @@ func (c *grpcIoTexClient) GetTransactions(ctx context.Context, height int64) (re
 	ret = make([]*types.Transaction, 0)
 	actionMap := make(map[hash.Hash256]*iotextypes.Action)
 	receiptMap := make(map[hash.Hash256]*iotextypes.Receipt)
+	// hashSlice for fixed sequence,b/c map is unordered
+	hashSlice := make([]hash.Hash256, 0)
 	blk := getRawBlocksRes.GetBlocks()[0]
 	for _, act := range blk.GetBlock().GetBody().GetActions() {
 		proto, err := proto.Marshal(act)
@@ -178,11 +180,13 @@ func (c *grpcIoTexClient) GetTransactions(ctx context.Context, height int64) (re
 			return nil, err
 		}
 		actionMap[hash.Hash256b(proto)] = act
+		hashSlice = append(hashSlice, hash.Hash256b(proto))
 	}
 	for _, receipt := range blk.GetReceipts() {
 		receiptMap[hash.BytesToHash256(receipt.ActHash)] = receipt
 	}
-	for h, act := range actionMap {
+	for _, h := range hashSlice {
+		act := actionMap[h]
 		r, ok := receiptMap[h]
 		if !ok {
 			err = errors.New(fmt.Sprintf("failed find receipt:%s", hex.EncodeToString(h[:])))
@@ -320,19 +324,21 @@ func (c *grpcIoTexClient) decodeAction(ctx context.Context, act *iotextypes.Acti
 
 	amount, senderSign, actionType, dst, err := assertAction(act)
 	if err != nil {
-		return nil, err
+		return
 	}
-	if amount == "0" || actionType == "" {
-		return nil, nil
+	if amount == "" || actionType == "" {
+		return
 	}
-	var senderAmountWithSign, dstAmountWithSign string
-	if senderSign == "-" {
-		senderAmountWithSign = senderSign + amount
-		dstAmountWithSign = amount
-	} else {
-		senderAmountWithSign = amount
-		dstAmountWithSign = "-" + amount
+	senderAmountWithSign := amount
+	dstAmountWithSign := amount
+	if amount != "0" {
+		if senderSign == "-" {
+			senderAmountWithSign = senderSign + amount
+		} else {
+			dstAmountWithSign = "-" + amount
+		}
 	}
+
 	src := []*addressAmount{{address: callerAddr.String(), amount: senderAmountWithSign}}
 	var dstAll []*addressAmount
 	if dst != "" {
@@ -352,9 +358,14 @@ func (c *grpcIoTexClient) handleExecution(ctx context.Context, ret *types.Transa
 	}
 	var src, dst addressAmountList
 	for _, transfer := range resp.GetActionEvmTransfers().GetEvmTransfers() {
+		amount := new(big.Int).SetBytes(transfer.Amount)
+		amountStr := amount.String()
+		if amount.Sign() != 0 {
+			amountStr = "-" + amount.String()
+		}
 		src = append(src, &addressAmount{
 			address: transfer.From,
-			amount:  "-" + new(big.Int).SetBytes(transfer.Amount).String(),
+			amount:  amountStr,
 		})
 		dst = append(dst, &addressAmount{
 			address: transfer.To,
