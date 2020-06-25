@@ -74,14 +74,14 @@ curl -X POST --data '{
 #response:
 #{"block":{"block_identifier":{"index":4034780,"hash":"bc1ad74d423f84e553602798e86019254b70d4499f1738a11c285ab9e31ea3b2"},"parent_block_identifier":{"index":4034779,"hash":"ac25b97cb7c9743b496cf45586d442ae4777753c77ca08d539bb96f30bca08c6"},"timestamp":1592801095000,"transactions":[{"transaction_identifier":{"hash":"9f261c47ad6611388c8e4569d2db378d2a7d98607c4259f5f9819ae6703742e6"},"operations":[{"operation_identifier":{"index":0},"type":"fee","status":"success","account":{"address":"io1mflp9m6hcgm2qcghchsdqj3z3eccrnekx9p0ms"},"amount":{"value":"-10000000000000000","currency":{"symbol":"IOTX","decimals":18}}},{"operation_identifier":{"index":1},"type":"stakeCreate","status":"success","account":{"address":"io1mflp9m6hcgm2qcghchsdqj3z3eccrnekx9p0ms"},"amount":{"value":"-100000000000000000000","currency":{"symbol":"IOTX","decimals":18}}}]}]}}
 
-# CandidateRegister,from mainnet
+# candidateRegister
 curl -X POST --data '{
     "network_identifier": {
         "blockchain": "IoTeX",
-        "network": "mainnet"},
-    "block_identifier": {"index": 5160923}}' http://127.0.0.1:8080/block
+        "network": "testnet"},
+    "block_identifier": {"index": 3250479}}' http://127.0.0.1:8080/block
 #respone
-#{"block":{"block_identifier":{"index":5160923,"hash":"fe653d92713bbd0f438fb8426edc3daab10a2eef28aa95d81fdaab460dd52f8e"},"parent_block_identifier":{"index":5160922,"hash":"40a7de13ef6f183c6c5dbb4bcb18aad3cc78e56c0c2ced1c1e1602bc4cc5c5e9"},"timestamp":1591033570000,"transactions":[{"transaction_identifier":{"hash":"a7e60af13e75646293c412b96e959d5edb8c254d3a1bcd9b6d7536a1af37e7c6"},"operations":[{"operation_identifier":{"index":0},"type":"fee","status":"success","account":{"address":"io180w8cmhrxpjjulry2g4zpyhm8mx933yhqkr4g6"},"amount":{"value":"-10000000000000000","currency":{"symbol":"IOTX","decimals":18}}},{"operation_identifier":{"index":1},"type":"candidateRegister","status":"success","account":{"address":"io180w8cmhrxpjjulry2g4zpyhm8mx933yhqkr4g6"},"amount":{"value":"-2000000000000000000000000","currency":{"symbol":"IOTX","decimals":18}}}]}]}}
+#{"block":{"block_identifier":{"index":3250479,"hash":"7754ce13d644dffcffdbd7dce4ffd12ebda323ee0e991fac692f62f93635fcdc"},"parent_block_identifier":{"index":3250478,"hash":"d2007276daa9ebe303e7bf6dd3d2d8e106cf8a1f1b54c9086765075b6803bd55"},"timestamp":1588878220000,"transactions":[{"transaction_identifier":{"hash":"a543ed8e32aa854cd14d07f8724378151e7bdb80cc6457254ba136886b24703d"},"operations":[{"operation_identifier":{"index":0},"type":"fee","status":"success","account":{"address":"io120au9ra0nffdle04jx2g5gccn6gq8qd4fy03l4"},"amount":{"value":"-10000000000000000","currency":{"symbol":"IOTX","decimals":18}}},{"operation_identifier":{"index":1},"type":"candidateRegister","status":"success","account":{"address":"io120au9ra0nffdle04jx2g5gccn6gq8qd4fy03l4"},"amount":{"value":"-2000000000000000000000000","currency":{"symbol":"IOTX","decimals":18}}}]}]}}
 
 # StakeAddDeposit
 curl -X POST --data '{
@@ -92,23 +92,14 @@ curl -X POST --data '{
 #response
 #{"block":{"block_identifier":{"index":4066726,"hash":"de51a09829c13480da1e5bb11d3ee907cd79094d3c5acfa0e66daf88fcfac31a"},"parent_block_identifier":{"index":4066725,"hash":"c5c3ee4bfadfcea70dccca9056ccd48c1bfc122279059f32a08a78ad454a33cc"},"timestamp":1592960825000,"transactions":[{"transaction_identifier":{"hash":"c0477d9d735ce2b5cd7d9f8e48b1be113988dfa0147f4ffc4055dc4e38ff751c"},"operations":[{"operation_identifier":{"index":0},"type":"fee","status":"success","account":{"address":"io1mflp9m6hcgm2qcghchsdqj3z3eccrnekx9p0ms"},"amount":{"value":"-10000000000000000","currency":{"symbol":"IOTX","decimals":18}}},{"operation_identifier":{"index":1},"type":"stakeAddDeposit","status":"success","account":{"address":"io1mflp9m6hcgm2qcghchsdqj3z3eccrnekx9p0ms"},"amount":{"value":"-1000000000000000000","currency":{"symbol":"IOTX","decimals":18}}}]}]}}
 
-# claimFromRewardingFund,from mainnet,amount 0
+# claimFromRewardingFund
 curl -X POST --data '{
     "network_identifier": {
         "blockchain": "IoTeX",
-        "network": "mainnet"},
-    "block_identifier": {"index": 315038}}' http://127.0.0.1:8080/block
+        "network": "testnet"},
+    "block_identifier": {"index": 3580378}}' http://127.0.0.1:8080/block
 #response
-#{"block":{"block_identifier":{"index":315038,"hash":"24314b35be07dd06e25ef05420150e237c3f4cde0c07fd664b489c56315bd9a9"},"parent_block_identifier":{"index":315037,"hash":"616a57922a85b6f00f4e2e8305e6072fbef0f1cf2de2512f58b498d76dae69c2"},"timestamp":1559059770000,"transactions":[{"transaction_identifier":{"hash":"00b9d37f15058562cbed83925b228edbaee303bfbd435b260143aca36ff9f16c"},"operations":[{"operation_identifier":{"index":0},"type":"fee","status":"success","account":{"address":"io1mrdqgmxs78z2z9uh7nxdy5znqq464uq3ytep99"},"amount":{"value":"-10000000000000000","currency":{"symbol":"IOTX","decimals":18}}},{"operation_identifier":{"index":1},"type":"claimFromRewardingFund","status":"success","account":{"address":"io1mrdqgmxs78z2z9uh7nxdy5znqq464uq3ytep99"},"amount":{"value":"0","currency":{"symbol":"IOTX","decimals":18}}}]}]}}
-
-# claimFromRewardingFund,from mainnet
-curl -X POST --data '{
-    "network_identifier": {
-        "blockchain": "IoTeX",
-        "network": "mainnet"},
-    "block_identifier": {"index": 281865}}' http://127.0.0.1:8080/block
-#response
-#{"block":{"block_identifier":{"index":281865,"hash":"fadd764194c1c0e4a2c66d0781301e3df6db39c2187f784790eae99ce27ce968"},"parent_block_identifier":{"index":281864,"hash":"75b7203876c7bf9d706f19c2006c13af0b209679b5f3fabd7891e93abf27c7dc"},"timestamp":1558728020000,"transactions":[{"transaction_identifier":{"hash":"731363a1d5402f6cb26b1d602b63639b4e6834ca090e9b79efb87cd74d14ac39"},"operations":[{"operation_identifier":{"index":0},"type":"fee","status":"success","account":{"address":"io1enflh9v4hchwwlrw557h2tvjw6rup9mpjr0ncy"},"amount":{"value":"-10000000000000000","currency":{"symbol":"IOTX","decimals":18}}},{"operation_identifier":{"index":1},"type":"claimFromRewardingFund","status":"success","account":{"address":"io1enflh9v4hchwwlrw557h2tvjw6rup9mpjr0ncy"},"amount":{"value":"1162155154824986746555","currency":{"symbol":"IOTX","decimals":18}}}]},{"transaction_identifier":{"hash":"00cb745400e5d30db8e2a98ae4e0437f572d57c016284c6713986a9948764e80"},"operations":[{"operation_identifier":{"index":0},"type":"fee","status":"success","account":{"address":"io1c73j523xfhmuhsucuygmavg2tzg0jg2nj8u8ya"},"amount":{"value":"-10000000000000000","currency":{"symbol":"IOTX","decimals":18}}},{"operation_identifier":{"index":1},"type":"claimFromRewardingFund","status":"success","account":{"address":"io1c73j523xfhmuhsucuygmavg2tzg0jg2nj8u8ya"},"amount":{"value":"489299874101860736028","currency":{"symbol":"IOTX","decimals":18}}}]},{"transaction_identifier":{"hash":"e881fc8f12b943e1fcad885f984b577c54ad18f67a54338327ef5579e717af38"},"operations":[{"operation_identifier":{"index":0},"type":"fee","status":"success","account":{"address":"io1w7enh0vv87uw9rt732z089nq6652dradk30vlu"},"amount":{"value":"-10000000000000000","currency":{"symbol":"IOTX","decimals":18}}},{"operation_identifier":{"index":1},"type":"claimFromRewardingFund","status":"success","account":{"address":"io1w7enh0vv87uw9rt732z089nq6652dradk30vlu"},"amount":{"value":"2661682438620106221246","currency":{"symbol":"IOTX","decimals":18}}}]},{"transaction_identifier":{"hash":"dc8f9fabd9ad0da2a4f4813c7ebc9205b02b51e79ae7b6a6e858ab6417a01f20"},"operations":[{"operation_identifier":{"index":0},"type":"fee","status":"success","account":{"address":"io1mrdqgmxs78z2z9uh7nxdy5znqq464uq3ytep99"},"amount":{"value":"-10000000000000000","currency":{"symbol":"IOTX","decimals":18}}},{"operation_identifier":{"index":1},"type":"claimFromRewardingFund","status":"success","account":{"address":"io1mrdqgmxs78z2z9uh7nxdy5znqq464uq3ytep99"},"amount":{"value":"0","currency":{"symbol":"IOTX","decimals":18}}}]}]}}
+#{"block":{"block_identifier":{"index":3580378,"hash":"a4399d5ba23cfad1bb724ee4188b59fc79d631574b54abc80e2a761f5043eff6"},"parent_block_identifier":{"index":3580377,"hash":"d3467a12a3a3b2434107d6d3f873cf8a4f8e9bac8c3e7503990d6d866809244c"},"timestamp":1590529085000,"transactions":[{"transaction_identifier":{"hash":"c7e459ba489d45af0ecc3ddf5d70a5113a288cc7330ddf49ad430758bafff3d4"},"operations":[{"operation_identifier":{"index":0},"type":"fee","status":"success","account":{"address":"io1gakgrsnsxmg9ed0tlcc2ukxzxdg6v8z2glw82e"},"amount":{"value":"-10000000000000000","currency":{"symbol":"IOTX","decimals":18}}},{"operation_identifier":{"index":1},"type":"claimFromRewardingFund","status":"success","account":{"address":"io1gakgrsnsxmg9ed0tlcc2ukxzxdg6v8z2glw82e"},"amount":{"value":"1","currency":{"symbol":"IOTX","decimals":18}}}]}]}}
 
 # depositToRewardingFund
 curl -X POST --data '{
