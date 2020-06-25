@@ -27,7 +27,7 @@ To run the Docker image:
 
 	docker run -p 8080:8080 -e "ConfigPath=/etc/iotex/config.yaml" iotexproject/iotex-core-rosetta-gateway
 	
-# Exampls for Accessing Testnet via Rosetta API
+# Examples for Accessing Testnet via Rosetta API
 
 ## Account Balance
 
