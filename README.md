@@ -17,16 +17,21 @@ To clean-up:
 
 `make test` will automatically download and build the [rosetta-cli](https://github.com/coinbase/rosetta-cli) ,then run the gateway and validate it using `rosetta-cli`.
 
-# Running iotex-core-rosetta-gateway in Docker
+# Develop iotex-core-rosetta-gateway with Docker
 
-To build the Docker image:
+To build the Docker image from your local repo:
 
-	docker build -f ./docker/Dockerfile . -t iotexproject/iotex-core-rosetta-gateway
+	docker build -f ./docker/dev/Dockerfile . -t iotexproject/iotex-core-rosetta-gateway
 
 To run the Docker image:
 
 	docker run -p 8080:8080 -e "ConfigPath=/etc/iotex/config.yaml" iotexproject/iotex-core-rosetta-gateway
 	
+
+# Run IoTeX and Rosetta Gateway in a Docker
+
+Please refer to [Deployment](https://github.com/iotexproject/iotex-core-rosetta-gateway/blob/master/docker/deploy/README.md) here.
+
 # Examples for Accessing Testnet via Rosetta API
 
 ## Account Balance
