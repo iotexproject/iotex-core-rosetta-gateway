@@ -110,6 +110,8 @@ func NewIoTexClient(cfg *config.Config) (cli IoTexClient, err error) {
 	opts := []grpc.DialOption{}
 	if cfg.Server.SecureEndpoint {
 		opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
+	} else {
+		opts = append(opts, grpc.WithInsecure())
 	}
 	grpc, err := grpc.Dial(cfg.Server.Endpoint, opts...)
 	if err != nil {
