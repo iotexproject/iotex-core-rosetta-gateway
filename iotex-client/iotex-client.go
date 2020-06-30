@@ -107,7 +107,11 @@ type (
 
 // NewIoTexClient returns an implementation of IoTexClient
 func NewIoTexClient(cfg *config.Config) (cli IoTexClient, err error) {
-	grpc, err := grpc.Dial(cfg.Server.Endpoint, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
+	opts := []grpc.DialOption{}
+	if cfg.Server.SecureEndpoint {
+		opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
+	}
+	grpc, err := grpc.Dial(cfg.Server.Endpoint, opts...)
 	if err != nil {
 		return
 	}
