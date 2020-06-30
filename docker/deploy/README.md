@@ -1,5 +1,7 @@
 ## Running IoTeX node and Rosetta gateway in a Docker
 
+This setup is intended to run IoTeX mainnet node with Rosetta.
+
 Please put the `etc` in this directory under your local data path:
 ```bash
 cp -rf ./etc {YOUR_LOCAL_DATA_PATH}
