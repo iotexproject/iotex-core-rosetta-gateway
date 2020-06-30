@@ -14,6 +14,9 @@ To build the docker image:
 docker build . -t iotex-core-rosetta
 
 ```
+
+You can also find the built image here: `iotex/iotex-core-rosetta:latest`
+
 To run the docker image:
 ```bash
 docker run -v {YOUR_LOCAL_DATA_PATH}:/data -p 8080:8080 -p 4689:4689 -it iotex/iotex-core-rosetta
