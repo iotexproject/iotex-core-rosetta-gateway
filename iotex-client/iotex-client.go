@@ -386,6 +386,16 @@ func (c *grpcIoTexClient) gasFeeAndStatus(callerAddr address.Address, act *iotex
 	if receipt.GetStatus() != 1 {
 		status = StatusFail
 	}
+
+	var oper []*types.Operation
+	ret = &types.Transaction{
+		TransactionIdentifier: &types.TransactionIdentifier{
+			hex.EncodeToString(h[:]),
+		},
+		Operations: oper,
+		Metadata:   nil,
+	}
+
 	gasConsumed := new(big.Int).SetUint64(receipt.GetGasConsumed())
 	gasPrice, ok := new(big.Int).SetString(act.GetCore().GetGasPrice(), 10)
 	if !ok {
@@ -398,18 +408,7 @@ func (c *grpcIoTexClient) gasFeeAndStatus(callerAddr address.Address, act *iotex
 		return
 	}
 	sender := addressAmountList{{address: callerAddr.String(), amount: "-" + gasFee.String()}}
-	var oper []*types.Operation
 	_, oper, err = c.addOperation(sender, ActionTypeFee, status, 0, oper)
-	if err != nil {
-		return
-	}
-	ret = &types.Transaction{
-		TransactionIdentifier: &types.TransactionIdentifier{
-			hex.EncodeToString(h[:]),
-		},
-		Operations: oper,
-		Metadata:   nil,
-	}
 	return
 }
 
@@ -417,7 +416,7 @@ func (c *grpcIoTexClient) packTransaction(ret *types.Transaction, src, dst addre
 	sort.Sort(src)
 	sort.Sort(dst)
 	var oper []*types.Operation
-	endIndex, oper, err := c.addOperation(src, actionType, status, 1, oper)
+	endIndex, oper, err := c.addOperation(src, actionType, status, 0, oper)
 	if err != nil {
 		return
 	}
