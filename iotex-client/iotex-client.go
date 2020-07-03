@@ -10,7 +10,6 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"math/big"
 	"sort"
@@ -18,9 +17,12 @@ import (
 
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/gogo/protobuf/proto"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
+	errorStatus "google.golang.org/grpc/status"
 
 	"github.com/iotexproject/go-pkgs/crypto"
 	"github.com/iotexproject/go-pkgs/hash"
@@ -200,10 +202,7 @@ func (c *grpcIoTexClient) GetTransactions(ctx context.Context, height int64) (re
 		}
 		decode, err := c.decodeAction(ctx, act, h, r, client)
 		if err != nil {
-			// change to continue or return when systemlog is enabled in testnet
-			// TODO change it back
-			//return nil, err
-			continue
+			return nil, err
 		}
 		if decode != nil {
 			ret = append(ret, decode)
@@ -322,9 +321,8 @@ func (c *grpcIoTexClient) decodeAction(ctx context.Context, act *iotextypes.Acti
 		return
 	}
 
-	if act.GetCore().GetExecution() != nil {
-		// TODO test when testnet enable systemlog
-		err = c.handleExecution(ctx, ret, status, hex.EncodeToString(h[:]), client)
+	if act.GetCore().GetExecution() != nil && status == StatusSuccess {
+		err = c.handleExecution(ctx, ret, act, h, client, callerAddr, status)
 		return
 	}
 
@@ -350,20 +348,43 @@ func (c *grpcIoTexClient) decodeAction(ctx context.Context, act *iotextypes.Acti
 	if dst != "" {
 		dstAll = []*addressAmount{{address: dst, amount: dstAmountWithSign}}
 	}
-	err = c.packTransaction(ret, src, dstAll, actionType, status)
+	err = c.packTransaction(ret, src, dstAll, actionType, status, 1)
 	return
 }
 
-func (c *grpcIoTexClient) handleExecution(ctx context.Context, ret *types.Transaction, status, hash string, client iotexapi.APIServiceClient) (err error) {
-	request := &iotexapi.GetEvmTransfersByActionHashRequest{
-		ActionHash: hash,
-	}
-	resp, err := client.GetEvmTransfersByActionHash(ctx, request)
-	if err != nil {
+func (c *grpcIoTexClient) handleExecutionAmount(ctx context.Context, act *iotextypes.Action,
+	h hash.Hash256, client iotexapi.APIServiceClient, callerAddr address.Address) (src, dst []*addressAmount, err error) {
+	amount := act.GetCore().GetExecution().GetAmount()
+	if amount == "0" {
 		return
 	}
-	var src, dst addressAmountList
-	for _, transfer := range resp.GetActionEvmTransfers().GetEvmTransfers() {
+	// deal with pure transfer to contract address
+	src = []*addressAmount{{
+		address: callerAddr.String(),
+		amount:  "-" + act.GetCore().GetExecution().GetAmount(),
+	}}
+	// get contract address generated of this action hash
+	contractAddr := act.GetCore().GetExecution().GetContract()
+	if contractAddr == "" {
+		// need to get contract address generated of this action hash
+		responseReceipt, err := client.GetReceiptByAction(ctx, &iotexapi.GetReceiptByActionRequest{ActionHash: hex.EncodeToString(h[:])})
+		if err != nil {
+			return nil, nil, err
+		}
+		contractAddr = responseReceipt.GetReceiptInfo().GetReceipt().GetContractAddress()
+	}
+
+	dst = []*addressAmount{{
+		address: contractAddr,
+		amount:  act.GetCore().GetExecution().GetAmount(),
+	}}
+	return
+}
+
+func (c *grpcIoTexClient) handleExecutionSystemlog(ret *types.Transaction, transfers []*iotextypes.EvmTransfer, status string) (err error) {
+	src := []*addressAmount{}
+	dst := []*addressAmount{}
+	for _, transfer := range transfers {
 		amount := new(big.Int).SetBytes(transfer.Amount)
 		amountStr := amount.String()
 		if amount.Sign() != 0 {
@@ -378,7 +399,29 @@ func (c *grpcIoTexClient) handleExecution(ctx context.Context, ret *types.Transa
 			amount:  new(big.Int).SetBytes(transfer.Amount).String(),
 		})
 	}
-	return c.packTransaction(ret, src, dst, Execution, status)
+	return c.packTransaction(ret, src, dst, Execution, status, 1)
+}
+
+func (c *grpcIoTexClient) handleExecution(ctx context.Context, ret *types.Transaction, act *iotextypes.Action, h hash.Hash256, client iotexapi.APIServiceClient, callerAddr address.Address,
+	status string) (err error) {
+	src, dst, err := c.handleExecutionAmount(ctx, act, h, client, callerAddr)
+	if err != nil {
+		return
+	}
+	request := &iotexapi.GetEvmTransfersByActionHashRequest{
+		ActionHash: hex.EncodeToString(h[:]),
+	}
+	resp, err := client.GetEvmTransfersByActionHash(ctx, request)
+	if err != nil {
+		if errorStatus.Convert(err).Code() == codes.NotFound {
+			// TODO test this case,cannot differentiate systemlog indexer is bad or just this log is not exist
+			err = c.packTransaction(ret, src, dst, Execution, status, 1)
+			return
+		}
+		return
+	}
+	// if there's systemlog,the above src->dst is included
+	return c.handleExecutionSystemlog(ret, resp.GetActionEvmTransfers().GetEvmTransfers(), status)
 }
 
 func (c *grpcIoTexClient) gasFeeAndStatus(callerAddr address.Address, act *iotextypes.Action, h hash.Hash256, receipt *iotextypes.Receipt) (ret *types.Transaction, status string, err error) {
@@ -415,11 +458,12 @@ func (c *grpcIoTexClient) gasFeeAndStatus(callerAddr address.Address, act *iotex
 	return
 }
 
-func (c *grpcIoTexClient) packTransaction(ret *types.Transaction, src, dst addressAmountList, actionType, status string) (err error) {
+func (c *grpcIoTexClient) packTransaction(ret *types.Transaction, src, dst addressAmountList, actionType, status string, startIndex int64) (err error) {
 	sort.Sort(src)
 	sort.Sort(dst)
+
 	var oper []*types.Operation
-	endIndex, oper, err := c.addOperation(src, actionType, status, 1, oper)
+	endIndex, oper, err := c.addOperation(src, actionType, status, startIndex, oper)
 	if err != nil {
 		return
 	}
