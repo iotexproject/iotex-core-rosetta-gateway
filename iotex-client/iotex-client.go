@@ -352,31 +352,41 @@ func (c *grpcIoTexClient) decodeAction(ctx context.Context, act *iotextypes.Acti
 	return
 }
 
-func (c *grpcIoTexClient) handleExecution(ctx context.Context, ret *types.Transaction, act *iotextypes.Action, h hash.Hash256, client iotexapi.APIServiceClient, callerAddr address.Address, status string) (err error) {
+func (c *grpcIoTexClient) prepareExecution(ctx context.Context, act *iotextypes.Action,
+	h hash.Hash256, client iotexapi.APIServiceClient, callerAddr address.Address) (src, dst []*addressAmount, err error) {
 	amount := act.GetCore().GetExecution().GetAmount()
-	if amount != "0" {
-		amount = "-" + amount
+	if amount == "0" {
+		return
 	}
 	// deal with pure transfer to contract address
-	src := []*addressAmount{{
+	src = []*addressAmount{{
 		address: callerAddr.String(),
-		amount:  amount,
+		amount:  "-" + act.GetCore().GetExecution().GetAmount(),
 	}}
-
+	// get contract address generated of this action hash
 	contractAddr := act.GetCore().GetExecution().GetContract()
 	if contractAddr == "" {
 		// need to get contract address generated of this action hash
 		responseReceipt, err := client.GetReceiptByAction(ctx, &iotexapi.GetReceiptByActionRequest{ActionHash: hex.EncodeToString(h[:])})
 		if err != nil {
-			return err
+			return nil, nil, err
 		}
 		contractAddr = responseReceipt.GetReceiptInfo().GetReceipt().GetContractAddress()
 	}
 
-	dst := []*addressAmount{{
+	dst = []*addressAmount{{
 		address: contractAddr,
 		amount:  act.GetCore().GetExecution().GetAmount(),
 	}}
+	return
+}
+
+func (c *grpcIoTexClient) handleExecution(ctx context.Context, ret *types.Transaction, act *iotextypes.Action, h hash.Hash256, client iotexapi.APIServiceClient, callerAddr address.Address,
+	status string) (err error) {
+	src, dst, err := c.prepareExecution(ctx, act, h, client, callerAddr)
+	if err != nil {
+		return
+	}
 	request := &iotexapi.GetEvmTransfersByActionHashRequest{
 		ActionHash: hex.EncodeToString(h[:]),
 	}
