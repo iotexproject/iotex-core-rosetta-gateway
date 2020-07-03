@@ -352,7 +352,7 @@ func (c *grpcIoTexClient) decodeAction(ctx context.Context, act *iotextypes.Acti
 	return
 }
 
-func (c *grpcIoTexClient) prepareExecution(ctx context.Context, act *iotextypes.Action,
+func (c *grpcIoTexClient) handleExecutionAmount(ctx context.Context, act *iotextypes.Action,
 	h hash.Hash256, client iotexapi.APIServiceClient, callerAddr address.Address) (src, dst []*addressAmount, err error) {
 	amount := act.GetCore().GetExecution().GetAmount()
 	if amount == "0" {
@@ -381,9 +381,30 @@ func (c *grpcIoTexClient) prepareExecution(ctx context.Context, act *iotextypes.
 	return
 }
 
+func (c *grpcIoTexClient) handleExecutionSystemlog(ret *types.Transaction, transfers []*iotextypes.EvmTransfer, status string) (err error) {
+	src := []*addressAmount{}
+	dst := []*addressAmount{}
+	for _, transfer := range transfers {
+		amount := new(big.Int).SetBytes(transfer.Amount)
+		amountStr := amount.String()
+		if amount.Sign() != 0 {
+			amountStr = "-" + amount.String()
+		}
+		src = append(src, &addressAmount{
+			address: transfer.From,
+			amount:  amountStr,
+		})
+		dst = append(dst, &addressAmount{
+			address: transfer.To,
+			amount:  new(big.Int).SetBytes(transfer.Amount).String(),
+		})
+	}
+	return c.packTransaction(ret, src, dst, Execution, status, 1)
+}
+
 func (c *grpcIoTexClient) handleExecution(ctx context.Context, ret *types.Transaction, act *iotextypes.Action, h hash.Hash256, client iotexapi.APIServiceClient, callerAddr address.Address,
 	status string) (err error) {
-	src, dst, err := c.prepareExecution(ctx, act, h, client, callerAddr)
+	src, dst, err := c.handleExecutionAmount(ctx, act, h, client, callerAddr)
 	if err != nil {
 		return
 	}
@@ -400,25 +421,7 @@ func (c *grpcIoTexClient) handleExecution(ctx context.Context, ret *types.Transa
 		return
 	}
 	// if there's systemlog,the above src->dst is included
-	src = []*addressAmount{}
-	dst = []*addressAmount{}
-	for _, transfer := range resp.GetActionEvmTransfers().GetEvmTransfers() {
-		amount := new(big.Int).SetBytes(transfer.Amount)
-		amountStr := amount.String()
-		if amount.Sign() != 0 {
-			amountStr = "-" + amount.String()
-		}
-		src = append(src, &addressAmount{
-			address: transfer.From,
-			amount:  amountStr,
-		})
-		dst = append(dst, &addressAmount{
-			address: transfer.To,
-			amount:  new(big.Int).SetBytes(transfer.Amount).String(),
-		})
-	}
-	err = c.packTransaction(ret, src, dst, Execution, status, 1)
-	return
+	return c.handleExecutionSystemlog(ret, resp.GetActionEvmTransfers().GetEvmTransfers(), status)
 }
 
 func (c *grpcIoTexClient) gasFeeAndStatus(callerAddr address.Address, act *iotextypes.Action, h hash.Hash256, receipt *iotextypes.Receipt) (ret *types.Transaction, status string, err error) {
