@@ -12,6 +12,30 @@ trap "cleanup" EXIT
 GRN=$'\e[32;1m'
 OFF=$'\e[0m'
 
+ROSETTA_CLI_RELEASE=0.2.4
+IOTEX_SERVER_RELEASE=master
+
+#download
+printf "${GRN}### Downloading rosetta-cli release %s...${OFF}\n" ${ROSETTA_CLI_RELEASE}
+	wget --quiet --show-progress --progress=bar:force:noscroll -O tests/rosetta-cli-${ROSETTA_CLI_RELEASE}.tar.gz https://github.com/coinbase/rosetta-cli/archive/v${ROSETTA_CLI_RELEASE}.tar.gz
+
+printf "${GRN}### Downloading iotex-core release ${IOTEX_SERVER_RELEASE}...${OFF}\n"
+	wget --quiet --show-progress --progress=bar:force:noscroll -O tests/iotex-core-${IOTEX_SERVER_RELEASE}.tar.gz https://github.com/iotexproject/iotex-core/archive/${IOTEX_SERVER_RELEASE}.tar.gz
+
+#build
+printf "${GRN}### Building rosetta-cli...${OFF}\n"
+	tar -xf tests/rosetta-cli-${ROSETTA_CLI_RELEASE}.tar.gz -C tests
+	cd tests/rosetta-cli-${ROSETTA_CLI_RELEASE} && go build
+	cd ../..
+	cp tests/rosetta-cli-${ROSETTA_CLI_RELEASE}/rosetta-cli tests
+
+printf "${GRN}### Building iotex-core...${OFF}\n"
+	tar -xf tests/iotex-core-${IOTEX_SERVER_RELEASE}.tar.gz -C tests
+	cd tests/iotex-core-${IOTEX_SERVER_RELEASE} && make build
+	cd ../..
+	cp tests/iotex-core-${IOTEX_SERVER_RELEASE}/bin/server tests
+
+cd tests
 GW="./server -config-path=config_testnet.yaml -genesis-path=genesis_testnet.yaml -plugin=gateway"
 printf "${GRN}### Starting the iotex server...${OFF}\n"
 ${GW} &
@@ -24,10 +48,9 @@ go test
 
 sleep 3 #wait for the last candidate action
 
-cd ..
 GW="./iotex-core-rosetta-gateway"
 printf "${GRN}### Starting the Rosetta gateway...${OFF}\n"
-cd ..
+cd ../..
 export ConfigPath=tests/gateway_config.yaml
 go build -o ./iotex-core-rosetta-gateway .
 ${GW} &
