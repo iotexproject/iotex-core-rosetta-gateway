@@ -1,7 +1,7 @@
 [
   {
     "account_identifier": {
-      "address":"io10t7juxazfteqzjsd6qjk7tkgmngj2tm7n4fvrd"
+      "address":"io1mflp9m6hcgm2qcghchsdqj3z3eccrnekx9p0ms"
     },
     "currency":{
       "symbol":"IOTX",
@@ -11,7 +11,7 @@
   },
   {
     "account_identifier": {
-      "address":"io120au9ra0nffdle04jx2g5gccn6gq8qd4fy03l4"
+      "address":"io1vdtfpzkwpyngzvx7u2mauepnzja7kd5rryp0sg"
     },
     "currency":{
       "symbol":"IOTX",
@@ -21,7 +21,7 @@
   },
   {
     "account_identifier": {
-      "address":"io1yrzvkucxpytn4fru35lc8r8jk4jtue4syg8d4h"
+      "address":"io1ph0u2psnd7muq5xv9623rmxdsxc4uapxhzpg02"
     },
     "currency":{
       "symbol":"IOTX",

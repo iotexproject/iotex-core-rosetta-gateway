@@ -93,11 +93,14 @@ func (s *networkAPIService) NetworkOptions(
 	if err != nil {
 		return nil, ErrUnableToGetNodeStatus
 	}
-
+	packageVersion := version.GetServerMeta().GetPackageVersion()
+	if packageVersion == "" {
+		packageVersion = "v1.0.0"
+	}
 	return &types.NetworkOptionsResponse{
 		Version: &types.Version{
 			RosettaVersion: s.client.GetConfig().Server.RosettaVersion,
-			NodeVersion:    version.GetServerMeta().GetPackageVersion(),
+			NodeVersion:    packageVersion,
 		},
 		Allow: &types.Allow{
 			OperationStatuses: []*types.OperationStatus{

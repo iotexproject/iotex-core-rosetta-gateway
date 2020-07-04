@@ -36,23 +36,16 @@ func (s *accountAPIService) AccountBalance(
 		return nil, terr
 	}
 	// TODO fix this when we have archive mode
-	acc, err := s.client.GetAccount(ctx, 0, request.AccountIdentifier.Address)
+	acc,blkIdentifier, err := s.client.GetAccount(ctx, 0, request.AccountIdentifier.Address)
 	if err != nil {
 		return nil, ErrUnableToGetAccount
-	}
-	blk, err := s.client.GetLatestBlock(ctx)
-	if err != nil {
-		return nil, ErrUnableToGetBlk
 	}
 
 	md := make(map[string]interface{})
 	md[NonceKey] = acc.Nonce
 
 	resp := &types.AccountBalanceResponse{
-		BlockIdentifier: &types.BlockIdentifier{
-			Index: blk.Height,
-			Hash:  blk.Hash,
-		},
+		BlockIdentifier:blkIdentifier,
 		Balances: []*types.Amount{
 			&types.Amount{
 				Value: acc.Balance,
