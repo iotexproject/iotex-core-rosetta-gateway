@@ -61,14 +61,14 @@ func (s *constructionAPIService) ConstructionMetadata(
 		return nil, ErrInvalidAccountAddress
 	}
 
-	nonce, err := s.client.GetAccount(ctx, 0, idString)
+	acc,_, err := s.client.GetAccount(ctx, 0, idString)
 	if err != nil {
 		return nil, ErrUnableToGetNextNonce
 	}
 
 	// Return next nonce that should be used to sign transactions for given account.
 	md := make(map[string]interface{})
-	md[NonceKey] = nonce
+	md[NonceKey] = acc.Nonce
 
 	resp := &types.ConstructionMetadataResponse{
 		Metadata: &md,

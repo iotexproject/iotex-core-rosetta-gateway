@@ -1,0 +1,11 @@
+network_identifier:
+  blockchain: IoTeX
+  network: testnet
+currency:
+  symbol: IOTX
+  decimals: 18
+server:
+  port: 8080
+  endpoint: 127.0.0.1:14014
+  secureEndpoint: false
+  rosettaVersion: 1.3.5

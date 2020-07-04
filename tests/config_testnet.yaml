@@ -1,0 +1,11 @@
+chain:
+  chainDBPath: chain.db
+  trieDBPath: trie.db
+  indexDBPath: index.db
+  candidateIndexDBPath: candidate.index.db
+  gravityChainDB:
+    dbPath: poll.db
+  enableSystemLog: true
+system:
+  systemLogDBPath: systemlog.db
+  httpStatsPort: 8081

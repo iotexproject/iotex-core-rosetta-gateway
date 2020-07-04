@@ -1,0 +1,7 @@
+account:
+  initBalances:
+    io1mflp9m6hcgm2qcghchsdqj3z3eccrnekx9p0ms: "1000000000000000000000000000"
+    io1vdtfpzkwpyngzvx7u2mauepnzja7kd5rryp0sg: "7000000000000000000000000000"
+    io1ph0u2psnd7muq5xv9623rmxdsxc4uapxhzpg02: "800000000000000000000000000"
+blockchain:
+  blockInterval: 3s

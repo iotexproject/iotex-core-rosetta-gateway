@@ -65,7 +65,7 @@ type (
 
 		// GetAccount returns the IoTex staking account for given owner address
 		// at given height.
-		GetAccount(ctx context.Context, height int64, owner string) (*Account, error)
+		GetAccount(ctx context.Context, height int64, owner string) (*Account, *types.BlockIdentifier, error)
 
 		// SubmitTx submits the given encoded transaction to the node.
 		SubmitTx(ctx context.Context, tx *iotextypes.Action) (txid string, err error)
@@ -148,7 +148,7 @@ func (c *grpcIoTexClient) GetGenesisBlock(ctx context.Context) (*IoTexBlock, err
 	return c.getBlock(ctx, 1)
 }
 
-func (c *grpcIoTexClient) GetAccount(ctx context.Context, height int64, owner string) (ret *Account, err error) {
+func (c *grpcIoTexClient) GetAccount(ctx context.Context, height int64, owner string) (acc *Account, blkIndentifier *types.BlockIdentifier, err error) {
 	err = c.reconnect()
 	if err != nil {
 		return
@@ -157,11 +157,15 @@ func (c *grpcIoTexClient) GetAccount(ctx context.Context, height int64, owner st
 	request := &iotexapi.GetAccountRequest{Address: owner}
 	resp, err := client.GetAccount(ctx, request)
 	if err != nil {
-		return nil, err
+		return
 	}
-	ret = &Account{
-		Nonce:   resp.AccountMeta.Nonce,
+	acc = &Account{
+		Nonce:   resp.AccountMeta.PendingNonce,
 		Balance: resp.AccountMeta.Balance,
+	}
+	blkIndentifier = &types.BlockIdentifier{
+		Index: int64(resp.BlockIdentifier.Height),
+		Hash:  resp.BlockIdentifier.Hash,
 	}
 	return
 }
@@ -303,7 +307,13 @@ func (c *grpcIoTexClient) reconnect() (err error) {
 	if c.grpcConn != nil && c.grpcConn.GetState() != connectivity.Shutdown {
 		return
 	}
-	c.grpcConn, err = grpc.Dial(c.endpoint, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
+	opts := []grpc.DialOption{}
+	if c.cfg.Server.SecureEndpoint {
+		opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
+	} else {
+		opts = append(opts, grpc.WithInsecure())
+	}
+	c.grpcConn, err = grpc.Dial(c.endpoint, opts...)
 	return err
 }
 
