@@ -34,18 +34,35 @@ import (
 )
 
 const (
-	Transfer               = "transfer"
-	Execution              = "execution"
-	DepositToRewardingFund = "depositToRewardingFund"
-	ClaimFromRewardingFund = "claimFromRewardingFund"
-	StakeCreate            = "stakeCreate"
-	StakeWithdraw          = "stakeWithdraw"
-	StakeAddDeposit        = "stakeAddDeposit"
-	CandidateRegister      = "candidateRegister"
-	StatusSuccess          = "success"
-	StatusFail             = "fail"
-	ActionTypeFee          = "fee"
+	rewardingProtocolID      = "rewarding"
+	stakingProtocolID        = "staking"
+	availableBalanceMethodID = "AvailableBalance"
+	Transfer                 = "transfer"
+	Execution                = "execution"
+	DepositToRewardingFund   = "depositToRewardingFund"
+	ClaimFromRewardingFund   = "claimFromRewardingFund"
+	StakeCreate              = "stakeCreate"
+	StakeWithdraw            = "stakeWithdraw"
+	StakeAddDeposit          = "stakeAddDeposit"
+	CandidateRegister        = "candidateRegister"
+	StatusSuccess            = "success"
+	StatusFail               = "fail"
+	ActionTypeFee            = "fee"
 )
+
+var (
+	RewardingAddress string
+	StakingAddress   string
+)
+
+func init() {
+	h := hash.Hash160b([]byte(rewardingProtocolID))
+	addr, _ := address.FromBytes(h[:])
+	RewardingAddress = addr.String()
+	h = hash.Hash160b([]byte(stakingProtocolID))
+	addr, _ = address.FromBytes(h[:])
+	StakingAddress = addr.String()
+}
 
 type (
 	// IoTexClient is the IoTex blockchain client interface.
@@ -136,6 +153,10 @@ func (c *grpcIoTexClient) GetLatestBlock(ctx context.Context) (*IoTexBlock, erro
 	if err != nil {
 		return nil, err
 	}
+	return c.getLatestBlock(ctx)
+}
+
+func (c *grpcIoTexClient) getLatestBlock(ctx context.Context) (*IoTexBlock, error) {
 	client := iotexapi.NewAPIServiceClient(c.grpcConn)
 	res, err := client.GetChainMeta(context.Background(), &iotexapi.GetChainMetaRequest{})
 	if err != nil {
@@ -153,6 +174,11 @@ func (c *grpcIoTexClient) GetAccount(ctx context.Context, height int64, owner st
 	if err != nil {
 		return
 	}
+
+	if owner == RewardingAddress {
+		return c.getRewardingAccount(ctx, height)
+	}
+
 	client := iotexapi.NewAPIServiceClient(c.grpcConn)
 	request := &iotexapi.GetAccountRequest{Address: owner}
 	resp, err := client.GetAccount(ctx, request)
@@ -166,6 +192,38 @@ func (c *grpcIoTexClient) GetAccount(ctx context.Context, height int64, owner st
 	blkIndentifier = &types.BlockIdentifier{
 		Index: int64(resp.BlockIdentifier.Height),
 		Hash:  resp.BlockIdentifier.Hash,
+	}
+	return
+}
+
+func (c *grpcIoTexClient) getRewardingAccount(ctx context.Context, height int64) (acc *Account,
+	blkIndentifier *types.BlockIdentifier, err error) {
+	// call readState
+	client := iotexapi.NewAPIServiceClient(c.grpcConn)
+	out, err := client.ReadState(context.Background(), &iotexapi.ReadStateRequest{
+		ProtocolID: []byte(rewardingProtocolID),
+		MethodName: []byte(availableBalanceMethodID),
+		Arguments:  nil,
+	})
+	if err != nil {
+		return
+	}
+	val, ok := big.NewInt(0).SetString(string(out.Data), 10)
+	if !ok {
+		err = errors.New("balance convert error")
+		return
+	}
+	acc = &Account{
+		Nonce:   0,
+		Balance: val.String(),
+	}
+	blk, err := c.getLatestBlock(ctx)
+	if err != nil {
+		return
+	}
+	blkIndentifier = &types.BlockIdentifier{
+		Index: blk.Height,
+		Hash:  blk.Hash,
 	}
 	return
 }
@@ -199,6 +257,10 @@ func (c *grpcIoTexClient) GetTransactions(ctx context.Context, height int64) (re
 	}
 	for _, h := range hashSlice {
 		act := actionMap[h]
+		if act.GetCore().GetGrantReward() != nil {
+			// gas fee and amount both 0
+			continue
+		}
 		r, ok := receiptMap[h]
 		if !ok {
 			err = errors.New(fmt.Sprintf("failed find receipt:%s", hex.EncodeToString(h[:])))
@@ -252,10 +314,6 @@ func (c *grpcIoTexClient) GetConfig() *config.Config {
 }
 
 func (c *grpcIoTexClient) getBlock(ctx context.Context, height int64) (ret *IoTexBlock, err error) {
-	err = c.reconnect()
-	if err != nil {
-		return
-	}
 	var parentHeight uint64
 	if height <= 1 {
 		parentHeight = 1
@@ -358,7 +416,7 @@ func (c *grpcIoTexClient) decodeAction(ctx context.Context, act *iotextypes.Acti
 	if dst != "" {
 		dstAll = []*addressAmount{{address: dst, amount: dstAmountWithSign}}
 	}
-	err = c.packTransaction(ret, src, dstAll, actionType, status, 1)
+	err = c.packTransaction(ret, src, dstAll, actionType, status, 2)
 	return
 }
 
@@ -409,7 +467,7 @@ func (c *grpcIoTexClient) handleExecutionSystemlog(ret *types.Transaction, trans
 			amount:  new(big.Int).SetBytes(transfer.Amount).String(),
 		})
 	}
-	return c.packTransaction(ret, src, dst, Execution, status, 1)
+	return c.packTransaction(ret, src, dst, Execution, status, 2)
 }
 
 func (c *grpcIoTexClient) handleExecution(ctx context.Context, ret *types.Transaction, act *iotextypes.Action, h hash.Hash256, client iotexapi.APIServiceClient, callerAddr address.Address,
@@ -425,7 +483,7 @@ func (c *grpcIoTexClient) handleExecution(ctx context.Context, ret *types.Transa
 	if err != nil {
 		if errorStatus.Convert(err).Code() == codes.NotFound {
 			// TODO test this case,cannot differentiate systemlog indexer is bad or just this log is not exist
-			err = c.packTransaction(ret, src, dst, Execution, status, 1)
+			err = c.packTransaction(ret, src, dst, Execution, status, 2)
 			return
 		}
 		return
@@ -453,8 +511,13 @@ func (c *grpcIoTexClient) gasFeeAndStatus(callerAddr address.Address, act *iotex
 	}
 
 	sender := addressAmountList{{address: callerAddr.String(), amount: amount}}
+	receiptor := addressAmountList{{address: RewardingAddress, amount: gasFee.String()}}
 	var oper []*types.Operation
 	_, oper, err = c.addOperation(sender, ActionTypeFee, status, 0, oper)
+	if err != nil {
+		return
+	}
+	_, oper, err = c.addOperation(receiptor, ActionTypeFee, status, 1, oper)
 	if err != nil {
 		return
 	}
@@ -527,22 +590,29 @@ func assertAction(act *iotextypes.Action) (amount, senderSign, actionType, dst s
 	case act.GetCore().GetDepositToRewardingFund() != nil:
 		actionType = DepositToRewardingFund
 		amount = act.GetCore().GetDepositToRewardingFund().GetAmount()
+		dst = RewardingAddress
 	case act.GetCore().GetClaimFromRewardingFund() != nil:
 		actionType = ClaimFromRewardingFund
 		amount = act.GetCore().GetClaimFromRewardingFund().GetAmount()
 		senderSign = "+"
+		dst = RewardingAddress
 	case act.GetCore().GetStakeAddDeposit() != nil:
 		actionType = StakeAddDeposit
 		amount = act.GetCore().GetStakeAddDeposit().GetAmount()
+		dst = StakingAddress
 	case act.GetCore().GetStakeCreate() != nil:
 		actionType = StakeCreate
 		amount = act.GetCore().GetStakeCreate().GetStakedAmount()
+		dst = StakingAddress
 	case act.GetCore().GetStakeWithdraw() != nil:
 		// TODO need to add amount when it's available on iotex-core
 		actionType = StakeWithdraw
+		senderSign = "+"
+		dst = StakingAddress
 	case act.GetCore().GetCandidateRegister() != nil:
 		actionType = CandidateRegister
 		amount = act.GetCore().GetCandidateRegister().GetStakedAmount()
+		dst = StakingAddress
 	}
 	return
 }

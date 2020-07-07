@@ -37,7 +37,6 @@ const (
 	to          = "io1vdtfpzkwpyngzvx7u2mauepnzja7kd5rryp0sg"
 	receipt     = "io1mflp9m6hcgm2qcghchsdqj3z3eccrnekx9p0ms"
 	endpoint    = "127.0.0.1:14014"
-	//endpoint         = "api.testnet.iotex.one:80"
 )
 
 var (
