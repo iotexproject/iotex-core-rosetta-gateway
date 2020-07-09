@@ -424,7 +424,6 @@ func (c *grpcIoTexClient) handleImplicitTransferLog(ctx context.Context, height 
 				aal = append(aal, addressAmountList{{trans.Sender, "-" + amount, actionType}, {trans.Recipient, amount, actionType}}...)
 			}
 			c.addOperation(trans, aal, status, startIndex)
-			startIndex += int64(a.GetNumTransactions())
 			ret = append(ret, trans)
 		}
 	}
