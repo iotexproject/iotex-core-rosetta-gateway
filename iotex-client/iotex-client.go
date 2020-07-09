@@ -502,9 +502,10 @@ func (c *grpcIoTexClient) gasFeeAndStatus(act *iotextypes.Action, h string, rece
 		return
 	}
 	status = StatusSuccess
-	if receipt.GetStatus() != 1 {
-		status = StatusFail
-	}
+	// for rosetta this should be success
+	//if receipt.GetStatus() != 1 {
+	//	status = StatusFail
+	//}
 	gasConsumed := new(big.Int).SetUint64(receipt.GetGasConsumed())
 	gasPrice, ok := new(big.Int).SetString(act.GetCore().GetGasPrice(), 10)
 	if !ok {
