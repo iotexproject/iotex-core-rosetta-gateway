@@ -278,5 +278,15 @@
       "decimals":18
     },
     "value": "100000000000000000000000000"
+  },
+  {
+    "account_identifier": {
+      "address":"io154mvzs09vkgn0hw6gg3ayzw5w39jzp47f8py9v"
+    },
+    "currency":{
+      "symbol":"IOTX",
+      "decimals":18
+    },
+    "value": "200000000000000000000000000"
   }
 ]
