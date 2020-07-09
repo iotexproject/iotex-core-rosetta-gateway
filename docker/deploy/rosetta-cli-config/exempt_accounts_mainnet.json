@@ -1,0 +1,11 @@
+[
+  {
+    "account_identifier": {
+      "address":"io1qnpz47hx5q6r3w876axtrn6yz95d70cjl35r53"
+    },
+    "currency":{
+      "symbol":"IOTX",
+      "decimals":18
+    }
+  }
+]
