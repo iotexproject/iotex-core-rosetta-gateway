@@ -414,16 +414,18 @@ func (c *grpcIoTexClient) handleImplicitTransferLog(ctx context.Context, height 
 			if err != nil {
 				return ret, existTransferLog, err
 			}
-			var aal addressAmountList
-			for _, trans := range a.GetTransactions() {
-				amount := trans.GetAmount()
-				if amount == "0" {
-					continue
+			if receiptMap[h].Status == uint64(iotextypes.ReceiptStatus_Success) {
+				var aal addressAmountList
+				for _, t := range a.GetTransactions() {
+					amount := t.GetAmount()
+					if amount == "0" {
+						continue
+					}
+					actionType := getActionType(t.GetTopic())
+					aal = append(aal, addressAmountList{{t.Sender, "-" + amount, actionType}, {t.Recipient, amount, actionType}}...)
 				}
-				actionType := getActionType(trans.GetTopic())
-				aal = append(aal, addressAmountList{{trans.Sender, "-" + amount, actionType}, {trans.Recipient, amount, actionType}}...)
+				c.addOperation(trans, aal, status, startIndex)
 			}
-			c.addOperation(trans, aal, status, startIndex)
 			ret = append(ret, trans)
 		}
 	}
@@ -435,7 +437,9 @@ func (c *grpcIoTexClient) decodeAction(ctx context.Context, act *iotextypes.Acti
 	if err != nil {
 		return
 	}
-
+	if receipt.Status != uint64(iotextypes.ReceiptStatus_Success) {
+		return
+	}
 	// handle execution action,this still need for in case of there's no implicit log
 	if act.GetCore().GetExecution() != nil {
 		// get contract address generated of this action hash
