@@ -27,9 +27,10 @@ type (
 		RosettaVersion string `yaml:"rosettaVersion"`
 	}
 	Config struct {
-		NetworkIdentifier NetworkIdentifier `yaml:"network_identifier"`
-		Currency          Currency          `yaml:"currency"`
-		Server            Server            `yaml:"server"`
+		NetworkIdentifier  NetworkIdentifier `yaml:"network_identifier"`
+		Currency           Currency          `yaml:"currency"`
+		Server             Server            `yaml:"server"`
+		PacificBlockHeight int64             `yaml:pacificBlockHeight`
 	}
 )
 
@@ -42,6 +43,9 @@ func New(path string) (cfg *Config, err error) {
 	cfg = &Config{}
 	if err := yaml.Get(uconfig.Root).Populate(cfg); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal YAML config to struct")
+	}
+	if cfg.PacificBlockHeight == 0 {
+		cfg.PacificBlockHeight = 432001 // default use mainnet pacificBlockHeight
 	}
 	return
 }
