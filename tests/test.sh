@@ -13,6 +13,7 @@ GRN=$'\e[32;1m'
 OFF=$'\e[0m'
 
 ROSETTA_CLI_RELEASE=0.2.4
+# TODO change it to some version
 IOTEX_SERVER_RELEASE=master
 
 #download

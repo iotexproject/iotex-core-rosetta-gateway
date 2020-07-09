@@ -15,6 +15,10 @@ import (
 	ic "github.com/iotexproject/iotex-core-rosetta-gateway/iotex-client"
 )
 
+const (
+	latestVersion = "v1.0.0"
+)
+
 type networkAPIService struct {
 	client ic.IoTexClient
 }
@@ -50,12 +54,7 @@ func (s *networkAPIService) NetworkStatus(
 		return nil, terr
 	}
 
-	status, err := s.client.GetStatus(ctx)
-	if err != nil {
-		return nil, ErrUnableToGetNodeStatus
-	}
-	hei := int64(status.GetChainMeta().GetHeight())
-	blk, err := s.client.GetBlock(ctx, hei)
+	blk, err := s.client.GetLatestBlock(ctx)
 	if err != nil {
 		return nil, ErrUnableToGetNodeStatus
 	}
@@ -64,16 +63,10 @@ func (s *networkAPIService) NetworkStatus(
 		return nil, ErrUnableToGetNodeStatus
 	}
 	resp := &types.NetworkStatusResponse{
-		CurrentBlockIdentifier: &types.BlockIdentifier{
-			Index: hei,
-			Hash:  blk.Hash,
-		},
-		CurrentBlockTimestamp: blk.Timestamp, // ms
-		GenesisBlockIdentifier: &types.BlockIdentifier{
-			Index: genesisblk.Height,
-			Hash:  genesisblk.Hash,
-		},
-		Peers: nil,
+		CurrentBlockIdentifier: blk.BlockIdentifier,
+		CurrentBlockTimestamp:  blk.Timestamp, // ms
+		GenesisBlockIdentifier: genesisblk.BlockIdentifier,
+		Peers:                  nil,
 	}
 
 	return resp, nil
@@ -95,7 +88,7 @@ func (s *networkAPIService) NetworkOptions(
 	}
 	packageVersion := version.GetServerMeta().GetPackageVersion()
 	if packageVersion == "" {
-		packageVersion = "v1.0.0"
+		packageVersion = latestVersion
 	}
 	return &types.NetworkOptionsResponse{
 		Version: &types.Version{

@@ -12,7 +12,7 @@ import (
 
 	"github.com/coinbase/rosetta-sdk-go/server"
 	"github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 
 	"github.com/iotexproject/iotex-proto/golang/iotextypes"
 
@@ -22,10 +22,6 @@ import (
 // OptionsIDKey is the name of the key in the Options map inside a
 // ConstructionMetadataRequest that specifies the account ID.
 const OptionsIDKey = "id"
-
-// NonceKey is the name of the key in the Metadata map inside a
-// ConstructionMetadataResponse that specifies the next valid nonce.
-const NonceKey = "nonce"
 
 type constructionAPIService struct {
 	client ic.IoTexClient
@@ -61,17 +57,14 @@ func (s *constructionAPIService) ConstructionMetadata(
 		return nil, ErrInvalidAccountAddress
 	}
 
-	acc,_, err := s.client.GetAccount(ctx, 0, idString)
+	accout, err := s.client.GetAccount(ctx, 0, idString)
 	if err != nil {
 		return nil, ErrUnableToGetNextNonce
 	}
 
 	// Return next nonce that should be used to sign transactions for given account.
-	md := make(map[string]interface{})
-	md[NonceKey] = acc.Nonce
-
 	resp := &types.ConstructionMetadataResponse{
-		Metadata: &md,
+		Metadata: accout.Metadata,
 	}
 
 	return resp, nil

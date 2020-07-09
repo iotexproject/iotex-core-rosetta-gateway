@@ -5,3 +5,6 @@ account:
     io1ph0u2psnd7muq5xv9623rmxdsxc4uapxhzpg02: "800000000000000000000000000"
 blockchain:
   blockInterval: 3s
+  fbkMigrationHeight: 50
+staking:
+  withdrawWaitingPeriod: 3s

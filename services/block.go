@@ -44,25 +44,13 @@ func (s *blockAPIService) Block(
 		}
 	}
 
-	blk, err := s.client.GetBlock(ctx, height)
+	tblk, err := s.client.GetBlock(ctx, height)
 	if err != nil {
 		return nil, ErrUnableToGetBlk
 	}
-	txns, err := s.client.GetTransactions(ctx, height)
+	tblk.Transactions, err = s.client.GetTransactions(ctx, height)
 	if err != nil {
 		return nil, ErrUnableToGetBlk
-	}
-	tblk := &types.Block{
-		BlockIdentifier: &types.BlockIdentifier{
-			Index: blk.Height,
-			Hash:  blk.Hash,
-		},
-		ParentBlockIdentifier: &types.BlockIdentifier{
-			Index: blk.ParentHeight,
-			Hash:  blk.ParentHash,
-		},
-		Timestamp:    blk.Timestamp,
-		Transactions: txns,
 	}
 
 	resp := &types.BlockResponse{
