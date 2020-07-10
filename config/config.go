@@ -30,7 +30,7 @@ type (
 		NetworkIdentifier  NetworkIdentifier `yaml:"network_identifier"`
 		Currency           Currency          `yaml:"currency"`
 		Server             Server            `yaml:"server"`
-		PacificBlockHeight int64             `yaml:pacificBlockHeight`
+		PacificBlockHeight int64             `yaml:"pacificBlockHeight"`
 	}
 )
 
