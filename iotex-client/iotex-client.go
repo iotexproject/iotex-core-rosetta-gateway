@@ -517,12 +517,12 @@ func (c *grpcIoTexClient) gasFeeAndStatus(act *iotextypes.Action, h string, rece
 		return
 	}
 	gasFee := gasPrice.Mul(gasPrice, gasConsumed)
-	if height < c.cfg.PacificBlockHeight {
-		if act.GetCore().GetTransfer() != nil || act.GetCore().GetExecution() != nil {
-			gasFee = gasFee.Mul(gasFee, big.NewInt(2))
-		}
-	}
 	amount := gasFee.String()
+	if height < c.cfg.PacificBlockHeight && act.GetCore().GetExecution() != nil {
+		// before PacificBlockHeight Execution pay double gas fee
+		// and only one share go to reward address
+		amount = gasFee.Mul(gasFee, big.NewInt(2)).String()
+	}
 	// if gasFee is not 0
 	if gasFee.Sign() == 1 {
 		amount = "-" + amount
