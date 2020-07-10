@@ -255,7 +255,7 @@ func (c *grpcIoTexClient) GetTransactions(ctx context.Context, height int64) (re
 			err = errors.New(fmt.Sprintf("failed find receipt:%s", h))
 			return
 		}
-		decode, err := c.decodeAction(ctx, actionMap[h], h, r)
+		decode, err := c.decodeAction(ctx, actionMap[h], h, r, height)
 		if err != nil {
 			return nil, err
 		}
@@ -410,7 +410,7 @@ func (c *grpcIoTexClient) handleImplicitTransferLog(ctx context.Context, height 
 			h := hex.EncodeToString(a.ActionHash)
 			existTransferLog[h] = true
 			// handle gasFee first
-			trans, status, err := c.gasFeeAndStatus(actionMap[h], h, receiptMap[h])
+			trans, status, err := c.gasFeeAndStatus(actionMap[h], h, receiptMap[h], height)
 			if err != nil {
 				return ret, existTransferLog, err
 			}
@@ -432,8 +432,8 @@ func (c *grpcIoTexClient) handleImplicitTransferLog(ctx context.Context, height 
 	return ret, existTransferLog, nil
 }
 
-func (c *grpcIoTexClient) decodeAction(ctx context.Context, act *iotextypes.Action, h string, receipt *iotextypes.Receipt) (ret *types.Transaction, err error) {
-	ret, status, err := c.gasFeeAndStatus(act, h, receipt)
+func (c *grpcIoTexClient) decodeAction(ctx context.Context, act *iotextypes.Action, h string, receipt *iotextypes.Receipt, height int64) (ret *types.Transaction, err error) {
+	ret, status, err := c.gasFeeAndStatus(act, h, receipt, height)
 	if err != nil {
 		return
 	}
@@ -500,7 +500,7 @@ func (c *grpcIoTexClient) handleExecution(ctx context.Context, ret *types.Transa
 	return c.addOperation(ret, aal, status, 2)
 }
 
-func (c *grpcIoTexClient) gasFeeAndStatus(act *iotextypes.Action, h string, receipt *iotextypes.Receipt) (ret *types.Transaction, status string, err error) {
+func (c *grpcIoTexClient) gasFeeAndStatus(act *iotextypes.Action, h string, receipt *iotextypes.Receipt, height int64) (ret *types.Transaction, status string, err error) {
 	callerAddr, err := getCaller(act)
 	if err != nil {
 		return
@@ -518,6 +518,11 @@ func (c *grpcIoTexClient) gasFeeAndStatus(act *iotextypes.Action, h string, rece
 	}
 	gasFee := gasPrice.Mul(gasPrice, gasConsumed)
 	amount := gasFee.String()
+	if height < c.cfg.PacificBlockHeight && act.GetCore().GetExecution() != nil {
+		// before PacificBlockHeight Execution pay double gas fee
+		// and only one share go to reward address
+		amount = gasFee.Mul(gasFee, big.NewInt(2)).String()
+	}
 	// if gasFee is not 0
 	if gasFee.Sign() == 1 {
 		amount = "-" + amount
