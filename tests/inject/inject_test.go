@@ -31,15 +31,15 @@ import (
 )
 
 const (
-	sender      = "io1ph0u2psnd7muq5xv9623rmxdsxc4uapxhzpg02"
-	privateKey  = "414efa99dfac6f4095d6954713fb0085268d400d6a05a8ae8a69b5b1c10b4bed"
-	sender2     = "io1mflp9m6hcgm2qcghchsdqj3z3eccrnekx9p0ms"
-	privateKey2 = "cfa6ef757dee2e50351620dca002d32b9c090cfda55fb81f37f1d26b273743f1"
+	sender                  = "io1ph0u2psnd7muq5xv9623rmxdsxc4uapxhzpg02"
+	privateKey              = "414efa99dfac6f4095d6954713fb0085268d400d6a05a8ae8a69b5b1c10b4bed"
+	sender2                 = "io1mflp9m6hcgm2qcghchsdqj3z3eccrnekx9p0ms"
+	privateKey2             = "cfa6ef757dee2e50351620dca002d32b9c090cfda55fb81f37f1d26b273743f1"
 	onlyForExecution        = "io1zydewu5993fxx8mu0km65609ss36ckgwpp25p3"
 	onlyForExecutionPrivate = "cc816a12c3fee40cadab02c1bce4ff4fe5abf754a9683e597838c72b967e67bb"
-	to          = "io1vdtfpzkwpyngzvx7u2mauepnzja7kd5rryp0sg"
-	receipt     = "io1mflp9m6hcgm2qcghchsdqj3z3eccrnekx9p0ms"
-	endpoint    = "127.0.0.1:14014"
+	to                      = "io1vdtfpzkwpyngzvx7u2mauepnzja7kd5rryp0sg"
+	receipt                 = "io1mflp9m6hcgm2qcghchsdqj3z3eccrnekx9p0ms"
+	endpoint                = "127.0.0.1:14014"
 )
 
 var (
@@ -205,7 +205,6 @@ func TestStakeWithdraw(t *testing.T) {
 	getacc, err := c.API().GetAccount(context.Background(), &iotexapi.GetAccountRequest{
 		Address: sender})
 	require.NoError(err)
-	fmt.Println("nonce:", getacc.AccountMeta.PendingNonce)
 	cr, err := action.NewWithdrawStake(getacc.AccountMeta.PendingNonce, 1, nil, gasLimit, gasPrice)
 	require.NoError(err)
 	sk, err := crypto.HexStringToPrivateKey(privateKey)
@@ -225,6 +224,7 @@ func TestStakeWithdraw(t *testing.T) {
 }
 
 func TestInjectTransferUseExecution(t *testing.T) {
+	fmt.Println("inject transfer use execution")
 	require := require.New(t)
 	conn, err := grpc.Dial(endpoint, grpc.WithInsecure())
 	require.NoError(err)
