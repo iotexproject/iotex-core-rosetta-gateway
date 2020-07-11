@@ -254,7 +254,7 @@ func (c *grpcIoTexClient) GetTransactions(ctx context.Context, height int64) (re
 	}
 	for _, h := range hashSlice {
 		// grantReward action,gas fee and amount both 0
-		if actionMap[h].GetCore().GetGrantReward() != nil {
+		if actionMap[h].GetCore().GetGrantReward() != nil || actionMap[h].GetCore().GetPutPollResult() != nil {
 			continue
 		}
 		r, ok := receiptMap[h]
@@ -463,9 +463,6 @@ func (c *grpcIoTexClient) prepareOperations(ctx context.Context, act *iotextypes
 }
 
 func (c *grpcIoTexClient) handleOperations(ret *types.Transaction, oper *operation, caller string) error {
-	if oper.amount == "0" {
-		return nil
-	}
 	senderAmountWithSign := oper.amount
 	dstAmountWithSign := oper.amount
 	if oper.amount != "0" {
