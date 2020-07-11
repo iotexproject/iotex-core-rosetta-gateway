@@ -90,12 +90,17 @@ func getActionType(topic []byte) string {
 	return ""
 }
 
-func fillIndex(ret []*types.Transaction) {
-	for _, t := range ret {
-		for i, oper := range t.Operations {
-			oper.OperationIdentifier.Index = int64(i)
+func fillIndex(transactions []*types.Transaction) []*types.Transaction {
+	for i, t := range transactions {
+		if len(t.Operations) == 0 {
+			transactions = append(transactions[:i], transactions[i+1:]...)
+			continue
+		}
+		for j, oper := range t.Operations {
+			oper.OperationIdentifier.Index = int64(j)
 		}
 	}
+	return transactions
 }
 
 func getImplicitTransferLog(ctx context.Context, height int64, client iotexapi.APIServiceClient) (

@@ -270,7 +270,7 @@ func (c *grpcIoTexClient) GetTransactions(ctx context.Context, height int64) (re
 			ret = append(ret, decode)
 		}
 	}
-	fillIndex(ret)
+	ret = fillIndex(ret)
 	return
 }
 
@@ -463,6 +463,9 @@ func (c *grpcIoTexClient) prepareOperations(ctx context.Context, act *iotextypes
 }
 
 func (c *grpcIoTexClient) handleOperations(ret *types.Transaction, oper *operation, caller string) error {
+	if oper.amount == "0" {
+		return nil
+	}
 	senderAmountWithSign := oper.amount
 	dstAmountWithSign := oper.amount
 	if oper.amount != "0" {
