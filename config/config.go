@@ -31,6 +31,8 @@ type (
 		Currency           Currency          `yaml:"currency"`
 		Server             Server            `yaml:"server"`
 		PacificBlockHeight int64             `yaml:"pacificBlockHeight"`
+		KeepGrantReward    bool              `yaml:"keepGrantReward"`
+		KeepPutPollResult  bool              `yaml:"keepPutPollResult"`
 	}
 )
 

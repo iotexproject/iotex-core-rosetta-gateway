@@ -254,7 +254,7 @@ func (c *grpcIoTexClient) GetTransactions(ctx context.Context, height int64) (re
 	}
 	for _, h := range hashSlice {
 		// grantReward action,gas fee and amount both 0
-		if actionMap[h].GetCore().GetGrantReward() != nil || actionMap[h].GetCore().GetPutPollResult() != nil {
+		if (actionMap[h].GetCore().GetGrantReward() != nil && !c.cfg.KeepGrantReward) || (actionMap[h].GetCore().GetPutPollResult() != nil && !c.cfg.KeepPutPollResult) {
 			continue
 		}
 		r, ok := receiptMap[h]
