@@ -38,19 +38,6 @@ func assertAction(act *iotextypes.Action, operations operationList) operationLis
 		oper.amount = act.GetCore().GetClaimFromRewardingFund().GetAmount()
 		oper.isPositive = true
 		oper.dst = RewardingAddress
-	case act.GetCore().GetStakeAddDeposit() != nil:
-		oper.actionType = StakeAddDeposit
-		oper.amount = act.GetCore().GetStakeAddDeposit().GetAmount()
-		oper.dst = StakingAddress
-	case act.GetCore().GetStakeCreate() != nil:
-		oper.actionType = StakeCreate
-		oper.amount = act.GetCore().GetStakeCreate().GetStakedAmount()
-		oper.dst = StakingAddress
-	//case stakewithdraw already handled before this call
-	case act.GetCore().GetCandidateRegister() != nil:
-		oper.actionType = CandidateRegister
-		oper.amount = act.GetCore().GetCandidateRegister().GetStakedAmount()
-		oper.dst = StakingAddress
 	}
 	if oper.amount != "0" && oper.actionType != "" {
 		operations = append(operations, oper)
@@ -81,11 +68,23 @@ func getCaller(act *iotextypes.Action) (callerAddr address.Address, err error) {
 func getActionType(topic []byte) string {
 	InContractTransfer := common.Hash{}
 	BucketWithdrawAmount := hash.BytesToHash256([]byte("withdrawAmount"))
+	BucketCreateAmount := hash.BytesToHash256([]byte("createAmount"))
+	BucketDepositAmount := hash.BytesToHash256([]byte("depositAmount"))
+	CandidateRegistrationFee := hash.BytesToHash256([]byte("registrationFee"))
+	CandidateSelfStake := hash.BytesToHash256([]byte("selfStake"))
 	switch {
 	case bytes.Compare(topic, InContractTransfer[:]) == 0:
 		return Execution
 	case bytes.Compare(topic, BucketWithdrawAmount[:]) == 0:
 		return StakeWithdraw
+	case bytes.Compare(topic, BucketCreateAmount[:]) == 0:
+		return StakeCreate
+	case bytes.Compare(topic, BucketDepositAmount[:]) == 0:
+		return StakeAddDeposit
+	case bytes.Compare(topic, CandidateRegistrationFee[:]) == 0:
+		return CandidateRegister
+	case bytes.Compare(topic, CandidateSelfStake[:]) == 0:
+		return CandidateRegister
 	}
 	return ""
 }

@@ -137,8 +137,8 @@ github.com/iotexproject/iotex-address v0.2.1 h1:ZJH2ajx5OBrbaRJ0ZWlWUo685zr5kjWi
 github.com/iotexproject/iotex-address v0.2.1/go.mod h1:ONmTqmg6zO7VWF9TcWN+UrreFr/xpazlv9PWOALbLFA=
 github.com/iotexproject/iotex-antenna-go/v2 v2.3.2 h1:xCJa1QYV/f9cSF9z32fFmfTcGb8sYvn1No+uDlgwABA=
 github.com/iotexproject/iotex-antenna-go/v2 v2.3.2/go.mod h1:R6WIWVfZAnpSo8llzEsSoGJgHSYeYamjBqG35oHpgxU=
-github.com/iotexproject/iotex-core v0.8.1-0.20200709022730-e345deaaed1a h1:leZzHU9Pv2o2quy7fuhvKH8JPJJmqfeeVj0L1GiIQ20=
-github.com/iotexproject/iotex-core v0.8.1-0.20200709022730-e345deaaed1a/go.mod h1:htvOfy1UGLKV5cI2teXMaSkpHKmUxAUASuLJlP11nSk=
+github.com/iotexproject/iotex-core v0.8.1-0.20200713031334-9be4cb0f24ed h1:WoAfIHuceCmGJcS9ppkbwdrZM4yALx/6Ah34bLSDzl8=
+github.com/iotexproject/iotex-core v0.8.1-0.20200713031334-9be4cb0f24ed/go.mod h1:1e+K8S1SL6xK2cl3zcO0y8iH/kTHtFCFXug7a2Dzfsk=
 github.com/iotexproject/iotex-election v0.2.18/go.mod h1:8GJZXtJeTaqOypPaQNzPWqCXEde4tU8fL00vsbvqEkw=
 github.com/iotexproject/iotex-proto v0.2.1-0.20190814190638-f74c55ffedf5/go.mod h1:962P5o0qlB5sqRT07TJBMX31i2u309kzDqqwCg+cGz0=
 github.com/iotexproject/iotex-proto v0.2.5/go.mod h1:962P5o0qlB5sqRT07TJBMX31i2u309kzDqqwCg+cGz0=
@@ -413,6 +413,7 @@ golang.org/x/net v0.0.0-20190424112056-4829fb13d2c6/go.mod h1:t9HGtf8HONx5eT2rtn
 golang.org/x/net v0.0.0-20190503192946-f4e77d36d62c h1:uOCk1iQW6Vc18bnC13MfzScl+wdKBmM9Y9kU7Z83/lw=
 golang.org/x/net v0.0.0-20190503192946-f4e77d36d62c/go.mod h1:t9HGtf8HONx5eT2rtn7q6eTqICYqUVnKs3thJo3Qplg=
 golang.org/x/net v0.0.0-20190603091049-60506f45cf65/go.mod h1:HSz+uSET+XFnRR8LxR5pz3Of3rY3CfYBVs4xY44aLks=
+golang.org/x/net v0.0.0-20190620200207-3b0461eec859 h1:R/3boaszxrf1GEUWTVDzSKVwLmSJpwZ1yqXm8j0v2QI=
 golang.org/x/net v0.0.0-20190620200207-3b0461eec859/go.mod h1:z5CRVTTTmAJ677TzLLGU+0bjPO0LkuOLi4/5GtJWs/s=
 golang.org/x/net v0.0.0-20191204025024-5ee1b9f4859a h1:+HHJiFUXVOIS9mr1ThqkQD1N8vpFCfCShqADBM12KTc=
 golang.org/x/net v0.0.0-20191204025024-5ee1b9f4859a/go.mod h1:z5CRVTTTmAJ677TzLLGU+0bjPO0LkuOLi4/5GtJWs/s=
