@@ -1,0 +1,20 @@
+[
+  {
+    "account_identifier": {
+      "address":"io1qnpz47hx5q6r3w876axtrn6yz95d70cjl35r53"
+    },
+    "currency":{
+      "symbol":"IOTX",
+      "decimals":18
+    }
+  },
+  {
+    "account_identifier": {
+      "address":"io154mvzs09vkgn0hw6gg3ayzw5w39jzp47f8py9v"
+    },
+    "currency":{
+      "symbol":"IOTX",
+      "decimals":18
+    }
+  }
+]

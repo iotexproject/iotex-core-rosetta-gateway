@@ -12,7 +12,6 @@ import (
 	"encoding/hex"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/iotexproject/go-pkgs/crypto"
 	"github.com/iotexproject/go-pkgs/hash"
@@ -66,12 +65,12 @@ func getCaller(act *iotextypes.Action) (callerAddr address.Address, err error) {
 }
 
 func getActionType(topic []byte) string {
-	InContractTransfer := common.Hash{}
-	BucketWithdrawAmount := hash.BytesToHash256([]byte("withdrawAmount"))
-	BucketCreateAmount := hash.BytesToHash256([]byte("createAmount"))
-	BucketDepositAmount := hash.BytesToHash256([]byte("depositAmount"))
-	CandidateRegistrationFee := hash.BytesToHash256([]byte("registrationFee"))
-	CandidateSelfStake := hash.BytesToHash256([]byte("selfStake"))
+	InContractTransfer := hash.BytesToHash256([]byte{byte(iotextypes.ImplicitTransferLogType_IN_CONTRACT_TRANSFER)})
+	BucketWithdrawAmount := hash.BytesToHash256([]byte{byte(iotextypes.ImplicitTransferLogType_BUCKET_WITHDRAW_AMOUNT)})
+	BucketCreateAmount := hash.BytesToHash256([]byte{byte(iotextypes.ImplicitTransferLogType_BUCKET_CREATE_AMOUNT)})
+	BucketDepositAmount := hash.BytesToHash256([]byte{byte(iotextypes.ImplicitTransferLogType_BUCKET_DEPOSIT_AMOUNT)})
+	CandidateSelfStake := hash.BytesToHash256([]byte{byte(iotextypes.ImplicitTransferLogType_CANDIDATE_SELF_STAKE)})
+	CandidateRegistrationFee := hash.BytesToHash256([]byte{byte(iotextypes.ImplicitTransferLogType_CANDIDATE_REGISTRATION_FEE)})
 	switch {
 	case bytes.Compare(topic, InContractTransfer[:]) == 0:
 		return Execution

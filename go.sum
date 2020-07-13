@@ -126,8 +126,8 @@ github.com/iotexproject/go-pkgs v0.1.2-0.20200523040337-5f1d9ddaa8ee h1:LxYC2EoA
 github.com/iotexproject/go-pkgs v0.1.2-0.20200523040337-5f1d9ddaa8ee/go.mod h1:vP6jDCmhY5F4jtWD1hf1BTlY5hu+0q0oqALfBL7pY+k=
 github.com/iotexproject/iotex-address v0.2.1 h1:ZJH2ajx5OBrbaRJ0ZWlWUo685zr5kjWijVjtmUrm42E=
 github.com/iotexproject/iotex-address v0.2.1/go.mod h1:ONmTqmg6zO7VWF9TcWN+UrreFr/xpazlv9PWOALbLFA=
-github.com/iotexproject/iotex-proto v0.3.1-0.20200708013036-e22eb581888c h1:h7gWVXSK1hZ1ls9gdhEAwuyK13RpopaLNOAiK/Hhr3c=
-github.com/iotexproject/iotex-proto v0.3.1-0.20200708013036-e22eb581888c/go.mod h1:xKA4yUbg208k1j3+t10Pe7IzT6uHcP+/4rsDanF4Q58=
+github.com/iotexproject/iotex-proto v0.3.1-0.20200713201308-abf112fff818 h1:tuNUbpty/x9XmVIoGBAmuowk+t2BFYD/NFc3BMq999c=
+github.com/iotexproject/iotex-proto v0.3.1-0.20200713201308-abf112fff818/go.mod h1:xKA4yUbg208k1j3+t10Pe7IzT6uHcP+/4rsDanF4Q58=
 github.com/jackpal/go-nat-pmp v1.0.2-0.20160603034137-1fa385a6f458/go.mod h1:QPH045xvCAeXUZOxsnwmrtiCoxIr9eob+4orBN1SBKc=
 github.com/jessevdk/go-flags v0.0.0-20141203071132-1679536dcc89/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
 github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af/go.mod h1:Nht3zPeWKUH0NzdCt2Blrr5ys8VGpn0CEB0cQHVjt7k=
