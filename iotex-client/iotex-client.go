@@ -30,20 +30,20 @@ import (
 )
 
 const (
-	rewardingProtocolID      = "rewarding"
-	stakingProtocolID        = "staking"
-	availableBalanceMethodID = "AvailableBalance"
-	Transfer                 = "transfer"
-	Execution                = "execution"
-	DepositToRewardingFund   = "depositToRewardingFund"
-	ClaimFromRewardingFund   = "claimFromRewardingFund"
-	StakeCreate              = "stakeCreate"
-	StakeWithdraw            = "stakeWithdraw"
-	StakeAddDeposit          = "stakeAddDeposit"
-	CandidateRegister        = "candidateRegister"
-	StatusSuccess            = "success"
-	StatusFail               = "fail"
-	ActionTypeFee            = "fee"
+	rewardingProtocolID    = "rewarding"
+	stakingProtocolID      = "staking"
+	totalBalanceMethodID   = "TotalBalance"
+	Transfer               = "transfer"
+	Execution              = "execution"
+	DepositToRewardingFund = "depositToRewardingFund"
+	ClaimFromRewardingFund = "claimFromRewardingFund"
+	StakeCreate            = "stakeCreate"
+	StakeWithdraw          = "stakeWithdraw"
+	StakeAddDeposit        = "stakeAddDeposit"
+	CandidateRegister      = "candidateRegister"
+	StatusSuccess          = "success"
+	StatusFail             = "fail"
+	ActionTypeFee          = "fee"
 	// NonceKey is the name of the key in the Metadata map inside a
 	// ConstructionMetadataResponse that specifies the next valid nonce.
 	NonceKey = "nonce"
@@ -108,11 +108,12 @@ type (
 	addressAmountList []*addressAmount
 
 	operation struct {
-		src        string
-		dst        string
-		amount     string
-		actionType string
-		isPositive bool
+		src              string
+		dst              string
+		amount           string
+		pacificGasAmount string
+		actionType       string
+		isPositive       bool
 	}
 	operationList []*operation
 
@@ -206,7 +207,7 @@ func (c *grpcIoTexClient) getRewardingAccount(ctx context.Context, height int64)
 	// call readState
 	out, err := c.client.ReadState(context.Background(), &iotexapi.ReadStateRequest{
 		ProtocolID: []byte(rewardingProtocolID),
-		MethodName: []byte(availableBalanceMethodID),
+		MethodName: []byte(totalBalanceMethodID),
 		Arguments:  nil,
 	})
 	if err != nil {
@@ -464,6 +465,10 @@ func (c *grpcIoTexClient) prepareOperations(ctx context.Context, act *iotextypes
 func (c *grpcIoTexClient) handleOperations(ret *types.Transaction, oper *operation, caller string) error {
 	senderAmountWithSign := oper.amount
 	dstAmountWithSign := oper.amount
+	if oper.pacificGasAmount != "" {
+		// pay pacific gas amount to rewarding protocol
+		dstAmountWithSign = oper.pacificGasAmount
+	}
 	if oper.amount != "0" {
 		if !oper.isPositive {
 			senderAmountWithSign = "-" + senderAmountWithSign
@@ -510,6 +515,7 @@ func (c *grpcIoTexClient) getGasFee(act *iotextypes.Action, receipt *iotextypes.
 	if height < c.cfg.PacificBlockHeight && act.GetCore().GetExecution() != nil {
 		// before PacificBlockHeight Execution pay double gas fee
 		// and only one share go to reward address
+		oper.pacificGasAmount = amount
 		amount = gasFee.Mul(gasFee, big.NewInt(2)).String()
 	}
 	oper.amount = amount
