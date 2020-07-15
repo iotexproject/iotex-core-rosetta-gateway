@@ -212,18 +212,17 @@ func (c *grpcIoTexClient) getRewardingAccount(ctx context.Context, height int64)
 	if err != nil {
 		return
 	}
-	val, ok := big.NewInt(0).SetString(string(out.Data), 10)
+	val, ok := big.NewInt(0).SetString(string(out.GetData()), 10)
 	if !ok {
 		err = errors.New("balance convert error")
 		return
 	}
-	blk, err := c.getLatestBlock(ctx)
-	if err != nil {
-		return
-	}
 
 	ret = &types.AccountBalanceResponse{
-		BlockIdentifier: blk.BlockIdentifier,
+		BlockIdentifier: &types.BlockIdentifier{
+			Index: int64(out.GetBlockIdentifier().GetHeight()),
+			Hash:  out.GetBlockIdentifier().GetHash(),
+		},
 		Balances: []*types.Amount{{
 			Value: val.String(),
 			Currency: &types.Currency{
