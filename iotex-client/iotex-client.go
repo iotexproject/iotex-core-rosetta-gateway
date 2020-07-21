@@ -49,20 +49,6 @@ const (
 	NonceKey = "nonce"
 )
 
-var (
-	RewardingAddress string
-	StakingAddress   string
-)
-
-func init() {
-	h := hash.Hash160b([]byte(rewardingProtocolID))
-	addr, _ := address.FromBytes(h[:])
-	RewardingAddress = addr.String()
-	h = hash.Hash160b([]byte(stakingProtocolID))
-	addr, _ = address.FromBytes(h[:])
-	StakingAddress = addr.String()
-}
-
 type (
 	// IoTexClient is the IoTex blockchain client interface.
 	IoTexClient interface {
@@ -175,8 +161,10 @@ func (c *grpcIoTexClient) GetAccount(ctx context.Context, height int64, owner st
 		return
 	}
 
-	if owner == RewardingAddress {
+	if owner == address.RewardingPoolAddr {
 		return c.getRewardingAccount(ctx, height)
+	} else if owner == address.StakingBucketPoolAddr {
+		return c.getStakingAccount(ctx, height)
 	}
 
 	request := &iotexapi.GetAccountRequest{Address: owner}
@@ -226,6 +214,55 @@ func (c *grpcIoTexClient) getRewardingAccount(ctx context.Context, height int64)
 		},
 		Balances: []*types.Amount{{
 			Value: val.String(),
+			Currency: &types.Currency{
+				Symbol:   c.cfg.Currency.Symbol,
+				Decimals: c.cfg.Currency.Decimals,
+				Metadata: nil,
+			},
+		},
+		},
+		Metadata: &map[string]interface{}{NonceKey: 0},
+	}
+	return
+}
+
+func (c *grpcIoTexClient) getStakingAccount(ctx context.Context, height int64) (ret *types.AccountBalanceResponse, err error) {
+	// call readState
+	methodName, err := proto.Marshal(&iotexapi.ReadStakingDataMethod{
+		Method: iotexapi.ReadStakingDataMethod_TOTAL_STAKING_AMOUNT,
+	})
+	if err != nil {
+		return nil, err
+	}
+	arg, err := proto.Marshal(&iotexapi.ReadStakingDataRequest{
+		Request: &iotexapi.ReadStakingDataRequest_TotalStakingAmount_{
+			TotalStakingAmount: &iotexapi.ReadStakingDataRequest_TotalStakingAmount{},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	readStateRequest := &iotexapi.ReadStateRequest{
+		ProtocolID: []byte(stakingProtocolID),
+		MethodName: methodName,
+		Arguments:  [][]byte{arg},
+	}
+	out, err := c.client.ReadState(ctx, readStateRequest)
+	if err != nil {
+		return nil, err
+	}
+	acc := iotextypes.AccountMeta{}
+	if err := proto.Unmarshal(out.GetData(), &acc); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal account meta")
+	}
+
+	ret = &types.AccountBalanceResponse{
+		BlockIdentifier: &types.BlockIdentifier{
+			Index: int64(out.GetBlockIdentifier().GetHeight()),
+			Hash:  out.GetBlockIdentifier().GetHash(),
+		},
+		Balances: []*types.Amount{{
+			Value: acc.GetBalance(),
 			Currency: &types.Currency{
 				Symbol:   c.cfg.Currency.Symbol,
 				Decimals: c.cfg.Currency.Decimals,
@@ -520,7 +557,7 @@ func (c *grpcIoTexClient) getGasFee(act *iotextypes.Action, receipt *iotextypes.
 	}
 	oper.amount = amount
 	oper.actionType = ActionTypeFee
-	oper.dst = RewardingAddress
+	oper.dst = address.RewardingPoolAddr
 	return
 }
 

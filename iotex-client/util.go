@@ -31,12 +31,12 @@ func assertAction(act *iotextypes.Action, operations operationList) operationLis
 	case act.GetCore().GetDepositToRewardingFund() != nil:
 		oper.actionType = DepositToRewardingFund
 		oper.amount = act.GetCore().GetDepositToRewardingFund().GetAmount()
-		oper.dst = RewardingAddress
+		oper.dst = address.RewardingPoolAddr
 	case act.GetCore().GetClaimFromRewardingFund() != nil:
 		oper.actionType = ClaimFromRewardingFund
 		oper.amount = act.GetCore().GetClaimFromRewardingFund().GetAmount()
 		oper.isPositive = true
-		oper.dst = RewardingAddress
+		oper.dst = address.RewardingPoolAddr
 	}
 	if oper.amount != "0" && oper.actionType != "" {
 		operations = append(operations, oper)
