@@ -1,7 +1,7 @@
 [
   {
     "account_identifier": {
-      "address":"io1qnpz47hx5q6r3w876axtrn6yz95d70cjl35r53"
+      "address":"io000000000000000000000000stakingprotocol"
     },
     "currency":{
       "symbol":"IOTX",
@@ -10,7 +10,7 @@
   },
   {
     "account_identifier": {
-      "address":"io154mvzs09vkgn0hw6gg3ayzw5w39jzp47f8py9v"
+      "address":"io0000000000000000000000rewardingprotocol"
     },
     "currency":{
       "symbol":"IOTX",
