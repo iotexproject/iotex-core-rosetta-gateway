@@ -26,6 +26,5 @@ docker run -v {YOUR_LOCAL_DATA_PATH}:/data -p 8080:8080 -p 4689:4689 -it iotex/i
 
 Once your node sync to tip height, you can check with rosetta-cli with following command:
 ```bash
-rosetta-cli check --lookup-balance-by-block=false --bootstrap-balances=./rosetta-cli-config/bootstrap_balances_mainnet.json --exempt-accounts=./rosetta-cli-config/exempt_accounts_mainnet.json --block-concurrency=100
+rosetta-cli check --lookup-balance-by-block=false --bootstrap-balances=./rosetta-cli-config/bootstrap_balances_mainnet.json --block-concurrency=100
 ```
-Notice that we have one address in the exempt list, that address is our staking protocol address. Currently, we don't have a method to retrieve the total staking token amount of our voters through API. We are working on adding such a method. For now, we exempt this address from reconciliation.
