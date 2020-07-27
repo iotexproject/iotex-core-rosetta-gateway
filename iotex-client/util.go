@@ -7,83 +7,53 @@
 package iotex_client
 
 import (
-	"bytes"
 	"context"
 	"encoding/hex"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
 
-	"github.com/iotexproject/go-pkgs/crypto"
-	"github.com/iotexproject/go-pkgs/hash"
-	"github.com/iotexproject/iotex-address/address"
 	"github.com/iotexproject/iotex-proto/golang/iotexapi"
 	"github.com/iotexproject/iotex-proto/golang/iotextypes"
 )
 
-func assertAction(act *iotextypes.Action, operations operationList) operationList {
-	oper := &operation{}
-	oper.amount = "0"
+const (
+	Transfer                   = "transfer"
+	Execution                  = "execution"
+	DepositToRewardingFund     = "depositToRewardingFund"
+	ClaimFromRewardingFund     = "claimFromRewardingFund"
+	StakeCreate                = "stakeCreate"
+	StakeWithdraw              = "stakeWithdraw"
+	StakeAddDeposit            = "stakeAddDeposit"
+	CandidateRegisterFee       = "candidateRegisterFee"
+	CandidateRegisterSelfStake = "candidateRegisterSelfStake"
+	StatusSuccess              = "success"
+	StatusFail                 = "fail"
+	GasFee                     = "fee"
+	// NonceKey is the name of the key in the Metadata map inside a
+	// ConstructionMetadataResponse that specifies the next valid nonce.
+	NonceKey = "nonce"
+)
+
+func getActionType(t iotextypes.TransactionLogType) string {
 	switch {
-	case act.GetCore().GetTransfer() != nil:
-		oper.actionType = Transfer
-		oper.amount = act.GetCore().GetTransfer().GetAmount()
-		oper.dst = act.GetCore().GetTransfer().GetRecipient()
-	case act.GetCore().GetDepositToRewardingFund() != nil:
-		oper.actionType = DepositToRewardingFund
-		oper.amount = act.GetCore().GetDepositToRewardingFund().GetAmount()
-		oper.dst = address.RewardingPoolAddr
-	case act.GetCore().GetClaimFromRewardingFund() != nil:
-		oper.actionType = ClaimFromRewardingFund
-		oper.amount = act.GetCore().GetClaimFromRewardingFund().GetAmount()
-		oper.isPositive = true
-		oper.dst = address.RewardingPoolAddr
-	}
-	if oper.amount != "0" && oper.actionType != "" {
-		operations = append(operations, oper)
-	}
-
-	return operations
-}
-
-func getContractAddress(ctx context.Context, h string, client iotexapi.APIServiceClient) (contractAddr string, err error) {
-	// need to get contract address generated of this action hash
-	responseReceipt, err := client.GetReceiptByAction(ctx, &iotexapi.GetReceiptByActionRequest{ActionHash: h})
-	if err != nil {
-		return
-	}
-	contractAddr = responseReceipt.GetReceiptInfo().GetReceipt().GetContractAddress()
-	return
-}
-
-func getCaller(act *iotextypes.Action) (callerAddr address.Address, err error) {
-	srcPub, err := crypto.BytesToPublicKey(act.GetSenderPubKey())
-	if err != nil {
-		return
-	}
-	callerAddr, err = address.FromBytes(srcPub.Hash())
-	return
-}
-
-func getActionType(topic []byte) string {
-	InContractTransfer := hash.BytesToHash256([]byte{byte(iotextypes.ImplicitTransferLogType_IN_CONTRACT_TRANSFER)})
-	BucketWithdrawAmount := hash.BytesToHash256([]byte{byte(iotextypes.ImplicitTransferLogType_BUCKET_WITHDRAW_AMOUNT)})
-	BucketCreateAmount := hash.BytesToHash256([]byte{byte(iotextypes.ImplicitTransferLogType_BUCKET_CREATE_AMOUNT)})
-	BucketDepositAmount := hash.BytesToHash256([]byte{byte(iotextypes.ImplicitTransferLogType_BUCKET_DEPOSIT_AMOUNT)})
-	CandidateSelfStake := hash.BytesToHash256([]byte{byte(iotextypes.ImplicitTransferLogType_CANDIDATE_SELF_STAKE)})
-	CandidateRegistrationFee := hash.BytesToHash256([]byte{byte(iotextypes.ImplicitTransferLogType_CANDIDATE_REGISTRATION_FEE)})
-	switch {
-	case bytes.Compare(topic, InContractTransfer[:]) == 0:
+	case t == iotextypes.TransactionLogType_IN_CONTRACT_TRANSFER:
 		return Execution
-	case bytes.Compare(topic, BucketWithdrawAmount[:]) == 0:
+	case t == iotextypes.TransactionLogType_WITHDRAW_BUCKET:
 		return StakeWithdraw
-	case bytes.Compare(topic, BucketCreateAmount[:]) == 0:
+	case t == iotextypes.TransactionLogType_CREATE_BUCKET:
 		return StakeCreate
-	case bytes.Compare(topic, BucketDepositAmount[:]) == 0:
+	case t == iotextypes.TransactionLogType_DEPOSIT_TO_BUCKET:
 		return StakeAddDeposit
-	case bytes.Compare(topic, CandidateRegistrationFee[:]) == 0:
-		return CandidateRegister
-	case bytes.Compare(topic, CandidateSelfStake[:]) == 0:
-		return CandidateRegister
+	case t == iotextypes.TransactionLogType_CLAIM_FROM_REWARDING_FUND:
+		return ClaimFromRewardingFund
+	case t == iotextypes.TransactionLogType_CANDIDATE_REGISTRATION_FEE:
+		return CandidateRegisterFee
+	case t == iotextypes.TransactionLogType_CANDIDATE_SELF_STAKE:
+		return CandidateRegisterSelfStake
+	case t == iotextypes.TransactionLogType_GAS_FEE:
+		return GasFee
+	case t == iotextypes.TransactionLogType_NATIVE_TRANSFER:
+		return Transfer
 	}
 	return ""
 }
@@ -101,16 +71,16 @@ func fillIndex(transactions []*types.Transaction) []*types.Transaction {
 	return transactions
 }
 
-func getImplicitTransferLog(ctx context.Context, height int64, client iotexapi.APIServiceClient) (
-	transferLogMap map[string][]*iotextypes.ImplicitTransferLog_Transaction, err error) {
-	transferLogMap = make(map[string][]*iotextypes.ImplicitTransferLog_Transaction)
-	transferLog, err := client.GetImplicitTransferLogByBlockHeight(
+func getTransactionLog(ctx context.Context, height int64, client iotexapi.APIServiceClient) (
+	transferLogMap map[string][]*iotextypes.TransactionLog_Transaction, err error) {
+	transferLogMap = make(map[string][]*iotextypes.TransactionLog_Transaction)
+	transferLog, err := client.GetTransactionLogByBlockHeight(
 		ctx,
-		&iotexapi.GetImplicitTransferLogByBlockHeightRequest{BlockHeight: uint64(height)},
+		&iotexapi.GetTransactionLogByBlockHeightRequest{BlockHeight: uint64(height)},
 	)
 
-	if err == nil && transferLog.GetBlockImplicitTransferLog().GetNumTransactions() != 0 {
-		for _, a := range transferLog.GetBlockImplicitTransferLog().GetImplicitTransferLog() {
+	if err == nil && transferLog.GetBlockTransactionLog().GetNumTransactions() != 0 {
+		for _, a := range transferLog.GetBlockTransactionLog().GetTransactionLog() {
 			h := hex.EncodeToString(a.ActionHash)
 			transferLogMap[h] = a.GetTransactions()
 		}

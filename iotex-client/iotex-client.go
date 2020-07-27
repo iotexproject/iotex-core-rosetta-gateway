@@ -11,7 +11,6 @@ import (
 	"crypto/tls"
 	"encoding/hex"
 	"fmt"
-	"math/big"
 	"sync"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
@@ -22,31 +21,10 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	"github.com/iotexproject/go-pkgs/hash"
-	"github.com/iotexproject/iotex-address/address"
 	"github.com/iotexproject/iotex-proto/golang/iotexapi"
 	"github.com/iotexproject/iotex-proto/golang/iotextypes"
 
 	"github.com/iotexproject/iotex-core-rosetta-gateway/config"
-)
-
-const (
-	rewardingProtocolID    = "rewarding"
-	stakingProtocolID      = "staking"
-	totalBalanceMethodID   = "TotalBalance"
-	Transfer               = "transfer"
-	Execution              = "execution"
-	DepositToRewardingFund = "depositToRewardingFund"
-	ClaimFromRewardingFund = "claimFromRewardingFund"
-	StakeCreate            = "stakeCreate"
-	StakeWithdraw          = "stakeWithdraw"
-	StakeAddDeposit        = "stakeAddDeposit"
-	CandidateRegister      = "candidateRegister"
-	StatusSuccess          = "success"
-	StatusFail             = "fail"
-	ActionTypeFee          = "fee"
-	// NonceKey is the name of the key in the Metadata map inside a
-	// ConstructionMetadataResponse that specifies the next valid nonce.
-	NonceKey = "nonce"
 )
 
 type (
@@ -85,7 +63,6 @@ type (
 		GetConfig() *config.Config
 	}
 
-	// sort is not necessary,add operation according the sequence from core
 	addressAmount struct {
 		address    string
 		amount     string
@@ -94,12 +71,11 @@ type (
 	addressAmountList []*addressAmount
 
 	operation struct {
-		src              string
-		dst              string
-		amount           string
-		pacificGasAmount string
-		actionType       string
-		isPositive       bool
+		src        string
+		dst        string
+		amount     string
+		actionType string
+		isPositive bool
 	}
 	operationList []*operation
 
@@ -194,8 +170,8 @@ func (c *grpcIoTexClient) GetTransactions(ctx context.Context, height int64) (re
 	if err != nil {
 		return
 	}
-	// get ImplicitTransferLog by height,if log is not exist,the err will be nil
-	transferLogMap, err := getImplicitTransferLog(ctx, height, c.client)
+	// get TransactionLog by height,if log is not exist,the err will be nil
+	transferLogMap, err := getTransactionLog(ctx, height, c.client)
 	if err != nil {
 		return
 	}
@@ -209,12 +185,15 @@ func (c *grpcIoTexClient) GetTransactions(ctx context.Context, height int64) (re
 			err = errors.New(fmt.Sprintf("failed find receipt:%s", h))
 			return
 		}
-		decode, err := c.decodeAction(ctx, h, actionMap[h], r, transferLogMap[h], height)
+		if r.Status != uint64(iotextypes.ReceiptStatus_Success) {
+			continue
+		}
+		transaction, err := c.packTransaction(h, actionMap[h], transferLogMap[h], height)
 		if err != nil {
 			return nil, err
 		}
-		if decode != nil {
-			ret = append(ret, decode)
+		if transaction != nil {
+			ret = append(ret, transaction)
 		}
 	}
 	ret = fillIndex(ret)
@@ -351,30 +330,41 @@ func (c *grpcIoTexClient) getRawBlock(ctx context.Context, height int64) (action
 	return
 }
 
-func (c *grpcIoTexClient) decodeAction(ctx context.Context, h string, act *iotextypes.Action,
-	receipt *iotextypes.Receipt, transferLogs []*iotextypes.ImplicitTransferLog_Transaction,
-	height int64) (ret *types.Transaction, err error) {
+func (c *grpcIoTexClient) packTransaction(h string, act *iotextypes.Action, transferLogs []*iotextypes.TransactionLog_Transaction, height int64) (ret *types.Transaction, err error) {
+	if transferLogs == nil {
+		return
+	}
 	ret = &types.Transaction{TransactionIdentifier: &types.TransactionIdentifier{h}}
-	callerAddr, err := getCaller(act)
-	if err != nil {
-		return
-	}
-	oper, err := c.getGasFee(act, receipt, height)
-	if err != nil {
-		return
-	}
-	oper.src = callerAddr.String()
 	operations := make(operationList, 0)
-	operations = append(operations, oper)
 
-	if receipt.Status == uint64(iotextypes.ReceiptStatus_Success) {
-		operations, err = c.prepareOperations(ctx, act, h, transferLogs, operations)
-		if err != nil {
-			return
+	for _, t := range transferLogs {
+		actionType := getActionType(t.GetType())
+		isPositive := false
+		if actionType == ClaimFromRewardingFund {
+			isPositive = true
 		}
+		if height < c.cfg.PacificBlockHeight && actionType == GasFee && act.GetCore().GetExecution() != nil {
+			// before PacificBlockHeight Execution pay double gas fee
+			// and only one share go to reward address
+			operations = append(operations, &operation{
+				src:        t.GetSender(),
+				dst:        "",
+				amount:     t.GetAmount(),
+				actionType: GasFee,
+				isPositive: isPositive,
+			})
+		}
+		operations = append(operations, &operation{
+			src:        t.GetSender(),
+			dst:        t.GetRecipient(),
+			amount:     t.GetAmount(),
+			actionType: actionType,
+			isPositive: isPositive,
+		})
 	}
+
 	for _, oper := range operations {
-		err = c.handleOperations(ret, oper, callerAddr.String())
+		err = c.splitOperations(ret, oper)
 		if err != nil {
 			return
 		}
@@ -382,40 +372,9 @@ func (c *grpcIoTexClient) decodeAction(ctx context.Context, h string, act *iotex
 	return
 }
 
-func (c *grpcIoTexClient) prepareOperations(ctx context.Context, act *iotextypes.Action, h string, transferLogs []*iotextypes.ImplicitTransferLog_Transaction, operations operationList) (operationList, error) {
-	if transferLogs != nil {
-		// handle implicit transfer log first
-		for _, t := range transferLogs {
-			operations = append(operations, &operation{
-				src:        t.GetSender(),
-				dst:        t.GetRecipient(),
-				amount:     t.GetAmount(),
-				actionType: getActionType(t.GetTopic()),
-				isPositive: false,
-			})
-		}
-	}
-
-	// get execution action operations,this is still needed for those in case of there're no implicit log
-	if act.GetCore().GetExecution() != nil && transferLogs == nil {
-		oper, err := c.getExecution(ctx, act, h)
-		if err != nil {
-			return operations, err
-		}
-		operations = append(operations, oper)
-	}
-	// get general action operations
-	operations = assertAction(act, operations)
-	return operations, nil
-}
-
-func (c *grpcIoTexClient) handleOperations(ret *types.Transaction, oper *operation, caller string) error {
+func (c *grpcIoTexClient) splitOperations(ret *types.Transaction, oper *operation) error {
 	senderAmountWithSign := oper.amount
 	dstAmountWithSign := oper.amount
-	if oper.pacificGasAmount != "" {
-		// pay pacific gas amount to rewarding protocol
-		dstAmountWithSign = oper.pacificGasAmount
-	}
 	if oper.amount != "0" {
 		if !oper.isPositive {
 			senderAmountWithSign = "-" + senderAmountWithSign
@@ -423,52 +382,10 @@ func (c *grpcIoTexClient) handleOperations(ret *types.Transaction, oper *operati
 			dstAmountWithSign = "-" + dstAmountWithSign
 		}
 	}
-	if oper.src == "" {
-		oper.src = caller
-	}
 	aal := addressAmountList{{oper.src, senderAmountWithSign, oper.actionType}}
-	if oper.dst != "" {
-		aal = append(aal, &addressAmount{oper.dst, dstAmountWithSign, oper.actionType})
-	}
+	aal = append(aal, &addressAmount{oper.dst, dstAmountWithSign, oper.actionType})
+
 	return c.addOperation(ret, aal, StatusSuccess)
-}
-
-func (c *grpcIoTexClient) getExecution(ctx context.Context, act *iotextypes.Action,
-	h string) (ret *operation, err error) {
-	ret = &operation{}
-	ret.dst = act.GetCore().GetExecution().GetContract()
-	if ret.dst == "" {
-		ret.dst, err = getContractAddress(ctx, h, c.client)
-		if err != nil {
-			return
-		}
-	}
-	ret.amount = act.GetCore().GetExecution().GetAmount()
-	ret.actionType = Execution
-	return
-}
-
-func (c *grpcIoTexClient) getGasFee(act *iotextypes.Action, receipt *iotextypes.Receipt,
-	height int64) (oper *operation, err error) {
-	oper = &operation{}
-	gasConsumed := new(big.Int).SetUint64(receipt.GetGasConsumed())
-	gasPrice, ok := new(big.Int).SetString(act.GetCore().GetGasPrice(), 10)
-	if !ok {
-		err = errors.New("convert gas price error")
-		return
-	}
-	gasFee := gasPrice.Mul(gasPrice, gasConsumed)
-	amount := gasFee.String()
-	if height < c.cfg.PacificBlockHeight && act.GetCore().GetExecution() != nil {
-		// before PacificBlockHeight Execution pay double gas fee
-		// and only one share go to reward address
-		oper.pacificGasAmount = amount
-		amount = gasFee.Mul(gasFee, big.NewInt(2)).String()
-	}
-	oper.amount = amount
-	oper.actionType = ActionTypeFee
-	oper.dst = address.RewardingPoolAddr
-	return
 }
 
 func (c *grpcIoTexClient) addOperation(ret *types.Transaction, amountList addressAmountList, status string) error {
