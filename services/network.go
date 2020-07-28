@@ -107,7 +107,7 @@ func (s *networkAPIService) NetworkOptions(
 				},
 			},
 			OperationTypes: []string{
-				ic.ActionTypeFee,
+				ic.GasFee,
 				ic.Transfer,
 				ic.Execution,
 				ic.DepositToRewardingFund,
@@ -115,7 +115,9 @@ func (s *networkAPIService) NetworkOptions(
 				ic.StakeCreate,
 				ic.StakeWithdraw,
 				ic.StakeAddDeposit,
-				ic.CandidateRegister},
+				ic.CandidateRegisterFee,
+				ic.CandidateRegisterSelfStake,
+			},
 			Errors: ErrorList,
 		},
 	}, nil
