@@ -10,7 +10,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/hex"
-	"fmt"
+	"log"
 	"sync"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
@@ -21,6 +21,7 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	"github.com/iotexproject/go-pkgs/hash"
+	"github.com/iotexproject/iotex-address/address"
 	"github.com/iotexproject/iotex-proto/golang/iotexapi"
 	"github.com/iotexproject/iotex-proto/golang/iotextypes"
 
@@ -62,23 +63,9 @@ type (
 		// GetConfig returns the config.
 		GetConfig() *config.Config
 	}
+)
 
-	addressAmount struct {
-		address    string
-		amount     string
-		actionType string
-	}
-	addressAmountList []*addressAmount
-
-	operation struct {
-		src        string
-		dst        string
-		amount     string
-		actionType string
-		isPositive bool
-	}
-	operationList []*operation
-
+type (
 	// grpcIoTexClient is an implementation of IoTexClient using gRPC.
 	grpcIoTexClient struct {
 		sync.RWMutex
@@ -166,7 +153,7 @@ func (c *grpcIoTexClient) GetTransactions(ctx context.Context, height int64) (re
 	if err = c.connect(); err != nil {
 		return
 	}
-	actionMap, receiptMap, hashSlice, err := c.getRawBlock(ctx, height)
+	actionMap, _, hashSlice, err := c.getRawBlock(ctx, height)
 	if err != nil {
 		return
 	}
@@ -176,25 +163,13 @@ func (c *grpcIoTexClient) GetTransactions(ctx context.Context, height int64) (re
 		return
 	}
 	for _, h := range hashSlice {
-		// grantReward action,gas fee and amount both 0
-		if (actionMap[h].GetCore().GetGrantReward() != nil && !c.cfg.KeepGrantReward) || (actionMap[h].GetCore().GetPutPollResult() != nil && !c.cfg.KeepPutPollResult) {
-			continue
-		}
-		r, ok := receiptMap[h]
-		if !ok {
-			err = errors.New(fmt.Sprintf("failed find receipt:%s", h))
-			return
-		}
-		if r.Status != uint64(iotextypes.ReceiptStatus_Success) {
-			continue
-		}
-		transaction, err := c.packTransaction(h, actionMap[h], transferLogMap[h], height)
-		if err != nil {
-			return nil, err
-		}
-		if transaction != nil {
+		if transferLogMap[h] != nil {
+			transaction := c.packTransaction(h, transferLogMap[h])
 			ret = append(ret, transaction)
+		} else if c.cfg.KeepNoneTxAction {
+			ret = append(ret, c.genNoneTxActTransaction(h, actionMap[h]))
 		}
+
 	}
 	ret = fillIndex(ret)
 	return
@@ -251,14 +226,9 @@ func (c *grpcIoTexClient) connect() (err error) {
 }
 
 func (c *grpcIoTexClient) getBlock(ctx context.Context, height int64) (ret *types.Block, err error) {
-	var parentHeight uint64
-	if height <= 1 {
-		parentHeight = 1
-	} else {
-		parentHeight = uint64(height) - 1
-	}
+	parentHeight := uint64(height) - 1
 	count := uint64(2)
-	if parentHeight == uint64(height) {
+	if parentHeight == 0 {
 		count = 1
 	}
 	request := &iotexapi.GetBlockMetasRequest{
@@ -276,13 +246,10 @@ func (c *grpcIoTexClient) getBlock(ctx context.Context, height int64) (ret *type
 	if len(resp.BlkMetas) == 0 {
 		return nil, errors.New("not found")
 	}
-	var blk, parentBlk *iotextypes.BlockMeta
+	parentBlk := resp.BlkMetas[0]
+	blk := resp.BlkMetas[0]
 	if len(resp.BlkMetas) == 2 {
 		blk = resp.BlkMetas[1]
-		parentBlk = resp.BlkMetas[0]
-	} else {
-		blk = resp.BlkMetas[0]
-		parentBlk = resp.BlkMetas[0]
 	}
 	ret = &types.Block{
 		BlockIdentifier: &types.BlockIdentifier{
@@ -330,91 +297,82 @@ func (c *grpcIoTexClient) getRawBlock(ctx context.Context, height int64) (action
 	return
 }
 
-func (c *grpcIoTexClient) packTransaction(h string, act *iotextypes.Action, transferLogs []*iotextypes.TransactionLog_Transaction, height int64) (ret *types.Transaction, err error) {
-	if transferLogs == nil {
-		return
+func (c *grpcIoTexClient) genNoneTxActTransaction(h string, act *iotextypes.Action) *types.Transaction {
+	callerAddr, err := getCaller(act)
+	if err != nil {
+		log.Fatalln("failed to get action caller", err)
 	}
-	ret = &types.Transaction{TransactionIdentifier: &types.TransactionIdentifier{h}}
-	operations := make(operationList, 0)
+	// gen an empty gas
+	tx := &iotextypes.TransactionLog_Transaction{
+		Type:      iotextypes.TransactionLogType_GAS_FEE,
+		Sender:    callerAddr.String(),
+		Recipient: address.RewardingPoolAddr,
+		Amount:    "0",
+	}
+	return c.packTransaction(h, []*iotextypes.TransactionLog_Transaction{tx})
+}
 
+func (c *grpcIoTexClient) packTransaction(h string, transferLogs []*iotextypes.TransactionLog_Transaction) *types.Transaction {
+	ret := &types.Transaction{TransactionIdentifier: &types.TransactionIdentifier{h}}
+	ret.Operations = make([]*types.Operation, 0, len(transferLogs))
 	for _, t := range transferLogs {
-		actionType := getActionType(t.GetType())
-		isPositive := false
-		if actionType == ClaimFromRewardingFund {
-			isPositive = true
-		}
-		if height < c.cfg.PacificBlockHeight && actionType == GasFee && act.GetCore().GetExecution() != nil {
-			// before PacificBlockHeight Execution pay double gas fee
-			// and only one share go to reward address
-			operations = append(operations, &operation{
-				src:        t.GetSender(),
-				dst:        "",
-				amount:     t.GetAmount(),
-				actionType: GasFee,
-				isPositive: isPositive,
-			})
-		}
-		operations = append(operations, &operation{
-			src:        t.GetSender(),
-			dst:        t.GetRecipient(),
-			amount:     t.GetAmount(),
-			actionType: actionType,
-			isPositive: isPositive,
-		})
+		ops := c.covertToOperations(t)
+		ret.Operations = append(ret.Operations, ops...)
 	}
-
-	for _, oper := range operations {
-		err = c.splitOperations(ret, oper)
-		if err != nil {
-			return
-		}
-	}
-	return
+	return ret
 }
 
-func (c *grpcIoTexClient) splitOperations(ret *types.Transaction, oper *operation) error {
-	senderAmountWithSign := oper.amount
-	dstAmountWithSign := oper.amount
-	if oper.amount != "0" {
-		if !oper.isPositive {
-			senderAmountWithSign = "-" + senderAmountWithSign
-		} else {
-			dstAmountWithSign = "-" + dstAmountWithSign
-		}
-	}
-	aal := addressAmountList{{oper.src, senderAmountWithSign, oper.actionType}}
-	aal = append(aal, &addressAmount{oper.dst, dstAmountWithSign, oper.actionType})
-
-	return c.addOperation(ret, aal, StatusSuccess)
-}
-
-func (c *grpcIoTexClient) addOperation(ret *types.Transaction, amountList addressAmountList, status string) error {
-	var oper []*types.Operation
-	for _, s := range amountList {
-		oper = append(oper, &types.Operation{
-			OperationIdentifier: &types.OperationIdentifier{
-				NetworkIndex: nil,
-			},
-			RelatedOperations: nil,
-			Type:              s.actionType,
-			Status:            status,
-			Account: &types.AccountIdentifier{
-				Address:    s.address,
-				SubAccount: nil,
-				Metadata:   nil,
-			},
-			Amount: &types.Amount{
-				Value: s.amount,
-				Currency: &types.Currency{
-					Symbol:   c.cfg.Currency.Symbol,
-					Decimals: c.cfg.Currency.Decimals,
-					Metadata: nil,
-				},
+func (c *grpcIoTexClient) covertToOperations(s *iotextypes.TransactionLog_Transaction) []*types.Operation {
+	ops := make([]*types.Operation, 2)
+	// sender
+	ops[0] = &types.Operation{
+		OperationIdentifier: &types.OperationIdentifier{
+			NetworkIndex: nil,
+		},
+		RelatedOperations: nil,
+		Type:              getActionType(s.GetType()),
+		Status:            StatusSuccess,
+		Account: &types.AccountIdentifier{
+			Address:    s.GetSender(),
+			SubAccount: nil,
+			Metadata:   nil,
+		},
+		Amount: &types.Amount{
+			Value: "-" + s.GetAmount(),
+			Currency: &types.Currency{
+				Symbol:   c.cfg.Currency.Symbol,
+				Decimals: c.cfg.Currency.Decimals,
 				Metadata: nil,
 			},
 			Metadata: nil,
-		})
+		},
+		Metadata: nil,
 	}
-	ret.Operations = append(ret.Operations, oper...)
-	return nil
+
+	// recipient
+	ops[1] = &types.Operation{
+		OperationIdentifier: &types.OperationIdentifier{
+			NetworkIndex: nil,
+		},
+		RelatedOperations: nil,
+		Type:              getActionType(s.GetType()),
+		Status:            StatusSuccess,
+		Account: &types.AccountIdentifier{
+			Address:    s.GetRecipient(),
+			SubAccount: nil,
+			Metadata:   nil,
+		},
+		Amount: &types.Amount{
+			Value: s.GetAmount(),
+			Currency: &types.Currency{
+				Symbol:   c.cfg.Currency.Symbol,
+				Decimals: c.cfg.Currency.Decimals,
+				Metadata: nil,
+			},
+			Metadata: nil,
+		},
+		Metadata: nil,
+	}
+
+	return ops
 }

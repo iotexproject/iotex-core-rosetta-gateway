@@ -12,6 +12,8 @@ import (
 
 	"github.com/coinbase/rosetta-sdk-go/types"
 
+	"github.com/iotexproject/go-pkgs/crypto"
+	"github.com/iotexproject/iotex-address/address"
 	"github.com/iotexproject/iotex-proto/golang/iotexapi"
 	"github.com/iotexproject/iotex-proto/golang/iotextypes"
 )
@@ -86,4 +88,13 @@ func getTransactionLog(ctx context.Context, height int64, client iotexapi.APISer
 		}
 	}
 	return transferLogMap, nil
+}
+
+func getCaller(act *iotextypes.Action) (callerAddr address.Address, err error) {
+	srcPub, err := crypto.BytesToPublicKey(act.GetSenderPubKey())
+	if err != nil {
+		return
+	}
+	callerAddr, err = address.FromBytes(srcPub.Hash())
+	return
 }

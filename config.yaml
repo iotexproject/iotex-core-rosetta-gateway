@@ -9,4 +9,3 @@ server:
   endpoint: api.testnet.iotex.one:443
   secureEndpoint: true
   rosettaVersion: 1.3.5
-pacificBlockHeight: 432001
