@@ -324,55 +324,59 @@ func (c *grpcIoTexClient) packTransaction(h string, transferLogs []*iotextypes.T
 }
 
 func (c *grpcIoTexClient) covertToOperations(s *iotextypes.TransactionLog_Transaction) []*types.Operation {
-	ops := make([]*types.Operation, 2)
+	ops := make([]*types.Operation, 0, 2)
 	// sender
-	ops[0] = &types.Operation{
-		OperationIdentifier: &types.OperationIdentifier{
-			NetworkIndex: nil,
-		},
-		RelatedOperations: nil,
-		Type:              getActionType(s.GetType()),
-		Status:            StatusSuccess,
-		Account: &types.AccountIdentifier{
-			Address:    s.GetSender(),
-			SubAccount: nil,
-			Metadata:   nil,
-		},
-		Amount: &types.Amount{
-			Value: "-" + s.GetAmount(),
-			Currency: &types.Currency{
-				Symbol:   c.cfg.Currency.Symbol,
-				Decimals: c.cfg.Currency.Decimals,
+	if s.GetSender() != "" {
+		ops = append(ops, &types.Operation{
+			OperationIdentifier: &types.OperationIdentifier{
+				NetworkIndex: nil,
+			},
+			RelatedOperations: nil,
+			Type:              getActionType(s.GetType()),
+			Status:            StatusSuccess,
+			Account: &types.AccountIdentifier{
+				Address:    s.GetSender(),
+				SubAccount: nil,
+				Metadata:   nil,
+			},
+			Amount: &types.Amount{
+				Value: "-" + s.GetAmount(),
+				Currency: &types.Currency{
+					Symbol:   c.cfg.Currency.Symbol,
+					Decimals: c.cfg.Currency.Decimals,
+					Metadata: nil,
+				},
 				Metadata: nil,
 			},
 			Metadata: nil,
-		},
-		Metadata: nil,
+		})
 	}
 
 	// recipient
-	ops[1] = &types.Operation{
-		OperationIdentifier: &types.OperationIdentifier{
-			NetworkIndex: nil,
-		},
-		RelatedOperations: nil,
-		Type:              getActionType(s.GetType()),
-		Status:            StatusSuccess,
-		Account: &types.AccountIdentifier{
-			Address:    s.GetRecipient(),
-			SubAccount: nil,
-			Metadata:   nil,
-		},
-		Amount: &types.Amount{
-			Value: s.GetAmount(),
-			Currency: &types.Currency{
-				Symbol:   c.cfg.Currency.Symbol,
-				Decimals: c.cfg.Currency.Decimals,
+	if s.GetRecipient() != "" {
+		ops = append(ops, &types.Operation{
+			OperationIdentifier: &types.OperationIdentifier{
+				NetworkIndex: nil,
+			},
+			RelatedOperations: nil,
+			Type:              getActionType(s.GetType()),
+			Status:            StatusSuccess,
+			Account: &types.AccountIdentifier{
+				Address:    s.GetRecipient(),
+				SubAccount: nil,
+				Metadata:   nil,
+			},
+			Amount: &types.Amount{
+				Value: s.GetAmount(),
+				Currency: &types.Currency{
+					Symbol:   c.cfg.Currency.Symbol,
+					Decimals: c.cfg.Currency.Decimals,
+					Metadata: nil,
+				},
 				Metadata: nil,
 			},
 			Metadata: nil,
-		},
-		Metadata: nil,
+		})
 	}
 
 	return ops
