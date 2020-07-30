@@ -332,7 +332,7 @@ func (c *grpcIoTexClient) covertToOperations(s *iotextypes.TransactionLog_Transa
 				NetworkIndex: nil,
 			},
 			RelatedOperations: nil,
-			Type:              getActionType(s.GetType()),
+			Type:              s.GetType().String(),
 			Status:            StatusSuccess,
 			Account: &types.AccountIdentifier{
 				Address:    s.GetSender(),
@@ -359,7 +359,7 @@ func (c *grpcIoTexClient) covertToOperations(s *iotextypes.TransactionLog_Transa
 				NetworkIndex: nil,
 			},
 			RelatedOperations: nil,
-			Type:              getActionType(s.GetType()),
+			Type:              s.GetType().String(),
 			Status:            StatusSuccess,
 			Account: &types.AccountIdentifier{
 				Address:    s.GetRecipient(),

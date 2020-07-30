@@ -13,6 +13,7 @@ import (
 	"github.com/coinbase/rosetta-sdk-go/types"
 
 	ic "github.com/iotexproject/iotex-core-rosetta-gateway/iotex-client"
+	"github.com/iotexproject/iotex-proto/golang/iotextypes"
 )
 
 const (
@@ -90,6 +91,10 @@ func (s *networkAPIService) NetworkOptions(
 	if packageVersion == "" {
 		packageVersion = latestVersion
 	}
+	opTyps := make([]string, 0, len(iotextypes.TransactionLogType_name))
+	for _, name := range iotextypes.TransactionLogType_name {
+		opTyps = append(opTyps, name)
+	}
 	return &types.NetworkOptionsResponse{
 		Version: &types.Version{
 			RosettaVersion: s.client.GetConfig().Server.RosettaVersion,
@@ -106,19 +111,8 @@ func (s *networkAPIService) NetworkOptions(
 					Successful: false,
 				},
 			},
-			OperationTypes: []string{
-				ic.GasFee,
-				ic.Transfer,
-				ic.Execution,
-				ic.DepositToRewardingFund,
-				ic.ClaimFromRewardingFund,
-				ic.StakeCreate,
-				ic.StakeWithdraw,
-				ic.StakeAddDeposit,
-				ic.CandidateRegisterFee,
-				ic.CandidateRegisterSelfStake,
-			},
-			Errors: ErrorList,
+			OperationTypes: opTyps,
+			Errors:         ErrorList,
 		},
 	}, nil
 }

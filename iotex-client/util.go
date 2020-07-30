@@ -19,46 +19,12 @@ import (
 )
 
 const (
-	Transfer                   = "transfer"
-	Execution                  = "execution"
-	DepositToRewardingFund     = "depositToRewardingFund"
-	ClaimFromRewardingFund     = "claimFromRewardingFund"
-	StakeCreate                = "stakeCreate"
-	StakeWithdraw              = "stakeWithdraw"
-	StakeAddDeposit            = "stakeAddDeposit"
-	CandidateRegisterFee       = "candidateRegisterFee"
-	CandidateRegisterSelfStake = "candidateRegisterSelfStake"
-	StatusSuccess              = "success"
-	StatusFail                 = "fail"
-	GasFee                     = "fee"
+	StatusSuccess = "success"
+	StatusFail    = "fail"
 	// NonceKey is the name of the key in the Metadata map inside a
 	// ConstructionMetadataResponse that specifies the next valid nonce.
 	NonceKey = "nonce"
 )
-
-func getActionType(t iotextypes.TransactionLogType) string {
-	switch {
-	case t == iotextypes.TransactionLogType_IN_CONTRACT_TRANSFER:
-		return Execution
-	case t == iotextypes.TransactionLogType_WITHDRAW_BUCKET:
-		return StakeWithdraw
-	case t == iotextypes.TransactionLogType_CREATE_BUCKET:
-		return StakeCreate
-	case t == iotextypes.TransactionLogType_DEPOSIT_TO_BUCKET:
-		return StakeAddDeposit
-	case t == iotextypes.TransactionLogType_CLAIM_FROM_REWARDING_FUND:
-		return ClaimFromRewardingFund
-	case t == iotextypes.TransactionLogType_CANDIDATE_REGISTRATION_FEE:
-		return CandidateRegisterFee
-	case t == iotextypes.TransactionLogType_CANDIDATE_SELF_STAKE:
-		return CandidateRegisterSelfStake
-	case t == iotextypes.TransactionLogType_GAS_FEE:
-		return GasFee
-	case t == iotextypes.TransactionLogType_NATIVE_TRANSFER:
-		return Transfer
-	}
-	return ""
-}
 
 func fillIndex(transactions []*types.Transaction) []*types.Transaction {
 	for i, t := range transactions {
