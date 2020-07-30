@@ -228,8 +228,9 @@ func (c *grpcIoTexClient) connect() (err error) {
 func (c *grpcIoTexClient) getBlock(ctx context.Context, height int64) (ret *types.Block, err error) {
 	parentHeight := uint64(height) - 1
 	count := uint64(2)
-	if parentHeight == 0 {
+	if parentHeight <= 0 {
 		count = 1
+		parentHeight = 1
 	}
 	request := &iotexapi.GetBlockMetasRequest{
 		Lookup: &iotexapi.GetBlockMetasRequest_ByIndex{

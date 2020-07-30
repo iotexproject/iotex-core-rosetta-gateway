@@ -10,7 +10,7 @@ require (
 	github.com/golang/protobuf v1.3.3
 	github.com/iotexproject/go-pkgs v0.1.2-0.20200523040337-5f1d9ddaa8ee
 	github.com/iotexproject/iotex-address v0.2.2
-	github.com/iotexproject/iotex-proto v0.3.2-0.20200727212950-88e68ce8b8a7
+	github.com/iotexproject/iotex-proto v0.3.2-0.20200729044038-c22fbb206571
 	github.com/pkg/errors v0.8.1
 	github.com/steakknife/bloomfilter v0.0.0-20180922174646-6819c0d2a570 // indirect
 	github.com/steakknife/hamming v0.0.0-20180906055917-c99c65617cd3 // indirect

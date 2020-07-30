@@ -80,12 +80,13 @@ func getTransactionLog(ctx context.Context, height int64, client iotexapi.APISer
 		ctx,
 		&iotexapi.GetTransactionLogByBlockHeightRequest{BlockHeight: uint64(height)},
 	)
+	if err != nil {
+		return nil, err
+	}
 
-	if err == nil && transferLog.GetBlockTransactionLog().GetNumTransactions() != 0 {
-		for _, a := range transferLog.GetBlockTransactionLog().GetTransactionLog() {
-			h := hex.EncodeToString(a.ActionHash)
-			transferLogMap[h] = a.GetTransactions()
-		}
+	for _, a := range transferLog.GetTransactionLogs().GetLogs() {
+		h := hex.EncodeToString(a.ActionHash)
+		transferLogMap[h] = a.GetTransactions()
 	}
 	return transferLogMap, nil
 }
