@@ -1,9 +1,8 @@
-FROM golang:1.13.5-stretch as build
+FROM golang:1.14.4-alpine as build
+RUN apk add --no-cache make gcc musl-dev linux-headers git curl
 ENV GO111MODULE=on
 
-RUN apt-get install -y --no-install-recommends make
-
-ARG CORE_VERSION="v1.0.0"
+ARG CORE_VERSION="master"
 RUN git clone --single-branch --branch $CORE_VERSION https://github.com/iotexproject/iotex-core /usr/local/build-core && \
     cd /usr/local/build-core && \
     make clean build && \
@@ -21,7 +20,9 @@ RUN git clone --single-branch --branch $GATEWAY_VERSION https://github.com/iotex
     cp ./iotex-core-rosetta-gateway /usr/local/bin/iotex-core-rosetta-gateway  && \
     cd / && rm -rf /usr/local/build-gateway
 
-FROM debian:stretch
+FROM alpine:latest
+RUN apk add --no-cache ca-certificates
+
 RUN mkdir -p /etc/iotex/meta
 COPY --from=build /usr/local/bin/iotex-server /usr/local/bin
 COPY --from=build /usr/local/bin/iotex-core-rosetta-gateway /usr/local/bin
