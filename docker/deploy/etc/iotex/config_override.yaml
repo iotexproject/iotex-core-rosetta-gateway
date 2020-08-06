@@ -14,7 +14,6 @@ chain:
   trieDBPath: "/data/trie.db"
   indexDBPath: "/data/index.db"
   candidateIndexDBPath: "/data/candidate.index.db"
-  enableSystemLog: true
   maxCacheSize: 1000
   committee:
     gravityChainAPIs:

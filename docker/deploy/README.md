@@ -13,7 +13,7 @@ If you are running the node behind a reverse proxy, it is suggested to set the r
 
 To build the docker image:
 ```bash
-docker build . -t iotex-core-rosetta
+docker build . -t iotex/iotex-core-rosetta
 
 ```
 
