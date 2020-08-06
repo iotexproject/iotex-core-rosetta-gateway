@@ -37,6 +37,15 @@
   },
   {
     "account_identifier": {
+      "address":"io1wlg5jfuzrsmzpfetzl6zaef7e99jywvfruqnr9"
+    },
+    "currency":{
+      "symbol":"IOTX",
+      "decimals":18
+    }
+  },
+  {
+    "account_identifier": {
       "address":"io13k7t6k3excy3hkyp60zjakc5le5fvvapqcwfsg"
     },
     "currency":{

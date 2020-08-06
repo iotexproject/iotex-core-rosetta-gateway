@@ -2,7 +2,7 @@ FROM golang:1.14-alpine as build
 RUN apk add --no-cache make gcc musl-dev linux-headers git curl
 ENV GO111MODULE=on
 
-ARG CORE_VERSION="master"
+ARG CORE_VERSION="r1.1"
 RUN git clone --single-branch --branch $CORE_VERSION https://github.com/iotexproject/iotex-core /usr/local/build-core && \
     cd /usr/local/build-core && \
     make clean build && \

@@ -31,7 +31,6 @@ fmt:
 test:
 	@docker build -f ./docker/test/Dockerfile . -t iotexproject/iotex-core-rosetta-test
 	@docker run --rm iotexproject/iotex-core-rosetta-test
-	@docker rmi iotexproject/iotex-core-rosetta-test
 
 .PHONY: clean
 clean:

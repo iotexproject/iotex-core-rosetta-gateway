@@ -9,4 +9,3 @@ server:
   endpoint: 127.0.0.1:14014
   secureEndpoint: false
   rosettaVersion: 1.3.5
-pacificBlockHeight: 432001
