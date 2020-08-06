@@ -15,7 +15,7 @@ To clean-up:
 	make clean
 
 
-`make test` will automatically download and build the [rosetta-cli](https://github.com/coinbase/rosetta-cli) ,then run the gateway and validate it using `rosetta-cli`.
+`make test` will automatically download and build the [rosetta-cli](https://github.com/coinbase/rosetta-cli) ,then run the gateway and validate it using `rosetta-cli`. More test details can be found here: [tests](https://github.com/iotexproject/iotex-core-rosetta-gateway/tree/master/tests)
 
 ## Develop iotex-core-rosetta-gateway with Docker
 
