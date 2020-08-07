@@ -2,6 +2,13 @@
 
 This repository implements the [Rosetta](https://github.com/coinbase/rosetta-sdk-go) for the [IoTeX](https://iotex.io) blockchain.
 
+
+Support Verions
+| iotex-core | rosetta-sdk | rosetta-cli |
+|----------|-------------|-------------|
+| v1.1.0|v0.1.5|v0.2.5|
+
+
 To build the server:
 
 	make
