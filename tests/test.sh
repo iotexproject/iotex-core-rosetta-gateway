@@ -24,20 +24,19 @@ GW="iotex-core-rosetta-gateway"
 ${GW} &
 sleep 3
 
-printf "${GRN}### Run rosetta-cli create:configuration...${OFF}\n"
-rosetta-cli create:configuration config.json
-
+cd ../rosetta-cli-config
 printf "${GRN}### Run rosetta-cli check...${OFF}\n"
-rosetta-cli check --lookup-balance-by-block=false --bootstrap-balances ./bootstrap_balances.json --exempt-accounts ./exempt_accounts.json &
+rosetta-cli check:data --configuration-file testing/iotex-testing.json &
 
+cd ../tests/inject
 printf "${GRN}### Inject some actions...${OFF}\n"
-cd inject
 go test
 
 sleep 10 #wait for the last candidate action
 
+cd ../../rosetta-cli-config
 printf "${GRN}### Run rosetta-cli view:account and view:block...${OFF}\n"
-rosetta-cli view:account '{"address":"io1ph0u2psnd7muq5xv9623rmxdsxc4uapxhzpg02"}'
-rosetta-cli view:block 10
+rosetta-cli view:account '{"address":"io1ph0u2psnd7muq5xv9623rmxdsxc4uapxhzpg02"}' --configuration-file testing/iotex-testing.json
+rosetta-cli view:block 10 --configuration-file testing/iotex-testing.json
 
 printf "${GRN}### Tests finished.${OFF}\n"

@@ -6,7 +6,7 @@ This repository implements the [Rosetta](https://github.com/coinbase/rosetta-sdk
 Support Verions
 | iotex-core | rosetta-specifications | rosetta-cli |
 |----------|-------------|-------------|
-| v1.1.0|v1.3.1|v0.2.5|
+| v1.1.0|v1.3.1|v0.4.0|
 
 
 To build the server:

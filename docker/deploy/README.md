@@ -24,7 +24,8 @@ To run the docker image:
 docker run -v {YOUR_LOCAL_DATA_PATH}:/data -p 8080:8080 -p 4689:4689 -it iotex/iotex-core-rosetta
 ```
 
-Once your node sync to tip height, you can check with rosetta-cli with following command:
+Once your node starts syncing, you can check with rosetta-cli with following command:
 ```bash
-rosetta-cli check --lookup-balance-by-block=false --bootstrap-balances=./rosetta-cli-config/bootstrap_balances_mainnet.json --block-concurrency=100
+cd ../../rosetta-cli-config
+rosetta-cli check:data --configuration-file mainnet/iotex.json
 ```
