@@ -8,6 +8,11 @@ Support Verions
 |----------|-------------|-------------|
 | v1.1.0|v1.3.1|v0.4.1|
 
+## Run IoTeX mainnet node and Rosetta Gateway in a Docker
+
+Please refer to [Deployment](https://github.com/iotexproject/iotex-core-rosetta-gateway/blob/master/docker/deploy) here.
+
+## Build and test
 
 To build the server:
 
@@ -32,8 +37,3 @@ To build the Docker image from your local repo:
 To run the Docker image:
 
 	docker run -p 8080:8080 -e "ConfigPath=/etc/iotex/config.yaml" iotexproject/iotex-core-rosetta-gateway
-	
-
-## Run IoTeX mainnet node and Rosetta Gateway in a Docker
-
-Please refer to [Deployment](https://github.com/iotexproject/iotex-core-rosetta-gateway/blob/master/docker/deploy) here.
