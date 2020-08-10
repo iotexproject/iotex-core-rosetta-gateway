@@ -24,7 +24,7 @@ To run the docker image:
 docker run -v {YOUR_LOCAL_DATA_PATH}:/data -p 8080:8080 -p 4689:4689 -it iotex/iotex-core-rosetta
 ```
 
-Once your node starts syncing, you can check with rosetta-cli with following command:
+Once your node starts syncing, you can check with rosetta-cli@v0.4.1 with following command:
 ```bash
 cd ../../rosetta-cli-config
 rosetta-cli check:data --configuration-file mainnet/iotex.json
