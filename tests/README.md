@@ -1,8 +1,7 @@
 ### Testing
 
-The test spins up a standalone IoTeX chain node and a iotex-core-rosetta-gateway first, then start checking the chain with rosetta-cli.
-Meanwhile, it starts injecting different actions to the chain including:
-
+The test first spins up a standalone IoTeX chain node and a iotex-core-rosetta-gateway locally, then starts checking the chain with rosetta-cli.
+Meanwhile, it also injects different actions onto the chain including:
 
 1. 20 token transfer actions
 2. 1 contract deployment
