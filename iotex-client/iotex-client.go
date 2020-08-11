@@ -327,6 +327,10 @@ func (c *grpcIoTexClient) covertToOperations(s *iotextypes.TransactionLog_Transa
 	ops := make([]*types.Operation, 0, 2)
 	// sender
 	if s.GetSender() != "" {
+		senderAmount := "-" + s.GetAmount()
+		if s.GetAmount() == "0" {
+			senderAmount = s.GetAmount()
+		}
 		ops = append(ops, &types.Operation{
 			OperationIdentifier: &types.OperationIdentifier{
 				NetworkIndex: nil,
@@ -340,7 +344,7 @@ func (c *grpcIoTexClient) covertToOperations(s *iotextypes.TransactionLog_Transa
 				Metadata:   nil,
 			},
 			Amount: &types.Amount{
-				Value: "-" + s.GetAmount(),
+				Value: senderAmount,
 				Currency: &types.Currency{
 					Symbol:   c.cfg.Currency.Symbol,
 					Decimals: c.cfg.Currency.Decimals,
