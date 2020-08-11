@@ -35,3 +35,6 @@ jobs:
 
     - name: Test
       run: go test -v ./... -short -race
+
+    - name: e2e test
+      run: make test
