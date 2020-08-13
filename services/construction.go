@@ -82,7 +82,6 @@ func (s *constructionAPIService) ConstructionCombine(
 
 	act.SenderPubKey = rawPub
 	rawSig := request.Signatures[0].Bytes
-	log.Println(len(rawSig), rawSig)
 	if len(rawSig) != 64 && len(rawSig) != 65 {
 		terr := ErrInvalidPublicKey
 		terr.Message += "nvalid signature format"
