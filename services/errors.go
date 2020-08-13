@@ -117,6 +117,66 @@ var (
 		Retriable: true,
 	}
 
+	ErrInvalidInputParam = &types.Error{
+		Code:      19,
+		Message:   "Invalid input param: ",
+		Retriable: false,
+	}
+
+	ErrUnsupportedPublicKeyType = &types.Error{
+		Code:      20,
+		Message:   "unsupported public key type",
+		Retriable: false,
+	}
+
+	ErrUnableToParseTx = &types.Error{
+		Code:      21,
+		Message:   "unable to parse transaction",
+		Retriable: false,
+	}
+
+	ErrInvalidGasPrice = &types.Error{
+		Code:      22,
+		Message:   "invalid gas price",
+		Retriable: false,
+	}
+
+	ErrUnmarshal = &types.Error{
+		Code:      23,
+		Message:   "proto unmarshal error",
+		Retriable: false,
+	}
+
+	ErrConstructionCheck = &types.Error{
+		Code:      24,
+		Message:   "operation construction check error: ",
+		Retriable: true,
+	}
+
+	ErrServiceInternal = &types.Error{
+		Code:      25,
+		Message:   "Internal error: ",
+		Retriable: false,
+	}
+
+	ErrExceededFee = &types.Error{
+		Code:      26,
+		Message:   "exceeded max fee",
+		Retriable: true,
+	}
+
+	ErrUnableToEstimateGas = &types.Error{
+		Code:      27,
+		Message:   "unable to estimate gas: ",
+		Retriable: false,
+	}
+
+	ErrUnableToGetSuggestGas = &types.Error{
+		Code:      28,
+		Message:   "unable to get suggest gas: ",
+		Retriable: false,
+	}
+
 	ErrorList = []*types.Error{
 		ErrUnableToGetChainID,
 		ErrInvalidBlockchain,
@@ -136,5 +196,15 @@ var (
 		ErrUnableToGetNextNonce,
 		ErrMalformedValue,
 		ErrUnableToGetNodeStatus,
+		ErrInvalidInputParam,
+		ErrUnsupportedPublicKeyType,
+		ErrUnableToParseTx,
+		ErrInvalidGasPrice,
+		ErrUnmarshal,
+		ErrConstructionCheck,
+		ErrServiceInternal,
+		ErrExceededFee,
+		ErrUnableToEstimateGas,
+		ErrUnableToGetSuggestGas,
 	}
 )

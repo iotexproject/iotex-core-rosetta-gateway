@@ -7,11 +7,13 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 	"os"
 
+	"github.com/coinbase/rosetta-sdk-go/asserter"
 	"github.com/coinbase/rosetta-sdk-go/server"
+	"github.com/coinbase/rosetta-sdk-go/types"
 
 	"github.com/iotexproject/iotex-core-rosetta-gateway/config"
 	ic "github.com/iotexproject/iotex-core-rosetta-gateway/iotex-client"
@@ -24,12 +26,25 @@ const (
 
 // NewBlockchainRouter returns a Mux http.Handler from a collection of
 // Rosetta service controllers.
-func NewBlockchainRouter(client ic.IoTexClient) http.Handler {
-	networkAPIController := server.NewNetworkAPIController(services.NewNetworkAPIService(client))
-	accountAPIController := server.NewAccountAPIController(services.NewAccountAPIService(client))
-	blockAPIController := server.NewBlockAPIController(services.NewBlockAPIService(client))
-	constructionAPIController := server.NewConstructionAPIController(services.NewConstructionAPIService(client))
-	return server.NewRouter(networkAPIController, accountAPIController, blockAPIController, constructionAPIController)
+func NewBlockchainRouter(client ic.IoTexClient) (http.Handler, error) {
+	asserter, err := asserter.NewServer(services.SupportedOperationTypes(),
+		false,
+		[]*types.NetworkIdentifier{
+			&types.NetworkIdentifier{
+				Blockchain: client.GetConfig().NetworkIdentifier.Blockchain,
+				Network:    client.GetConfig().NetworkIdentifier.Network,
+			},
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	networkAPIController := server.NewNetworkAPIController(services.NewNetworkAPIService(client), asserter)
+	accountAPIController := server.NewAccountAPIController(services.NewAccountAPIService(client), asserter)
+	blockAPIController := server.NewBlockAPIController(services.NewBlockAPIService(client), asserter)
+	constructionAPIController := server.NewConstructionAPIController(services.NewConstructionAPIService(client), asserter)
+	r := server.NewRouter(networkAPIController, accountAPIController, blockAPIController, constructionAPIController)
+	return server.CorsMiddleware(server.LoggerMiddleware(r)), nil
 }
 
 func main() {
@@ -39,22 +54,21 @@ func main() {
 	}
 	cfg, err := config.New(configPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: Failed to parse config: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("ERROR: Failed to parse config: %v\n", err)
 	}
 	// Prepare a new gRPC client.
 	client, err := ic.NewIoTexClient(cfg)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: Failed to prepare IoTex gRPC client: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("ERROR: Failed to prepare IoTex gRPC client: %v\n", err)
 	}
 
 	// Start the server.
-	router := NewBlockchainRouter(client)
-	fmt.Println("listen", "0.0.0.0:"+cfg.Server.Port)
-	err = http.ListenAndServe("0.0.0.0:"+cfg.Server.Port, router)
+	router, err := NewBlockchainRouter(client)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "IoTex Rosetta Gateway server exited with error: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("ERROR: Failed to init router: %v\n", err)
+	}
+	log.Println("listen", "0.0.0.0:"+cfg.Server.Port)
+	if err := http.ListenAndServe("0.0.0.0:"+cfg.Server.Port, router); err != nil {
+		log.Fatalf("IoTex Rosetta Gateway server exited with error: %v\n", err)
 	}
 }

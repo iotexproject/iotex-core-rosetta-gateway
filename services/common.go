@@ -12,6 +12,7 @@ import (
 	"github.com/coinbase/rosetta-sdk-go/types"
 
 	ic "github.com/iotexproject/iotex-core-rosetta-gateway/iotex-client"
+	"github.com/iotexproject/iotex-proto/golang/iotextypes"
 )
 
 // ValidateNetworkIdentifier validates the network identifier.
@@ -31,4 +32,12 @@ func ValidateNetworkIdentifier(ctx context.Context, c ic.IoTexClient, ni *types.
 		return ErrMissingNID
 	}
 	return nil
+}
+
+func SupportedOperationTypes() []string {
+	opTyps := make([]string, 0, len(iotextypes.TransactionLogType_name))
+	for _, name := range iotextypes.TransactionLogType_name {
+		opTyps = append(opTyps, name)
+	}
+	return opTyps
 }
