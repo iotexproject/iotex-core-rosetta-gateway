@@ -143,8 +143,14 @@ var (
 
 	ErrUnmarshal = &types.Error{
 		Code:      23,
-		Message:   "proto arshal error",
+		Message:   "proto unmarshal error",
 		Retriable: false,
+	}
+
+	ErrConstructionCheck = &types.Error{
+		Code:      24,
+		Message:   "operation construction check error: ",
+		Retriable: true,
 	}
 
 	ErrorList = []*types.Error{
@@ -167,5 +173,10 @@ var (
 		ErrMalformedValue,
 		ErrUnableToGetNodeStatus,
 		ErrInvalidPublicKey,
+		ErrUnsupportedPublicKeyType,
+		ErrUnableToParseTx,
+		ErrInvalidGasPrice,
+		ErrUnmarshal,
+		ErrConstructionCheck,
 	}
 )

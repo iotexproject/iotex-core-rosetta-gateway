@@ -62,6 +62,10 @@ type (
 
 		// GetConfig returns the config.
 		GetConfig() *config.Config
+
+		SuggestGasPrice(ctx context.Context) (uint64, error)
+
+		EstimateGasForAction(ctx context.Context, action *iotextypes.Action) (uint64, error)
 	}
 )
 
@@ -117,6 +121,22 @@ func (c *grpcIoTexClient) GetGenesisBlock(ctx context.Context) (*types.Block, er
 		return nil, err
 	}
 	return c.getBlock(ctx, 1)
+}
+
+func (c *grpcIoTexClient) SuggestGasPrice(ctx context.Context) (uint64, error) {
+	if err := c.connect(); err != nil {
+		return 0, err
+	}
+	response, err := c.client.SuggestGasPrice(ctx, &iotexapi.SuggestGasPriceRequest{})
+	return response.GetGasPrice(), err
+}
+
+func (c *grpcIoTexClient) EstimateGasForAction(ctx context.Context, action *iotextypes.Action) (uint64, error) {
+	if err := c.connect(); err != nil {
+		return 0, err
+	}
+	response, err := c.client.EstimateGasForAction(ctx, &iotexapi.EstimateGasForActionRequest{Action: action})
+	return response.GetGas(), err
 }
 
 func (c *grpcIoTexClient) GetAccount(ctx context.Context, height int64, owner string) (ret *types.AccountBalanceResponse, err error) {
