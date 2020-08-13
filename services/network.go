@@ -35,14 +35,13 @@ func (s *networkAPIService) NetworkList(
 	ctx context.Context,
 	request *types.MetadataRequest,
 ) (*types.NetworkListResponse, *types.Error) {
-	resp := &types.NetworkListResponse{
+	return &types.NetworkListResponse{
 		NetworkIdentifiers: []*types.NetworkIdentifier{{
 			Blockchain: s.client.GetConfig().NetworkIdentifier.Blockchain,
 			Network:    s.client.GetConfig().NetworkIdentifier.Network,
 		},
 		},
-	}
-	return resp, nil
+	}, nil
 }
 
 // NetworkStatus implements the /network/status endpoint.
