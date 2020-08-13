@@ -9,7 +9,6 @@ package services
 import (
 	"context"
 	"encoding/hex"
-	"log"
 	"math/big"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -27,9 +26,9 @@ import (
 )
 
 const (
-	// TODO config this
+	// TODO config these
 	CurveType     = "secp256k1"
-	SignatureType = "ecdsa"
+	SignatureType = "ecdsa_recovery"
 )
 
 type constructionAPIService struct {
@@ -54,8 +53,9 @@ func (s *constructionAPIService) ConstructionCombine(
 
 	tran, err := hex.DecodeString(request.UnsignedTransaction)
 	if err != nil {
-		// TODO better error
-		return nil, ErrUnmarshal
+		terr := ErrInvalidInputParam
+		terr.Message += err.Error()
+		return nil, terr
 	}
 	act := &iotextypes.Action{}
 	if err := proto.Unmarshal(tran, act); err != nil {
@@ -63,18 +63,26 @@ func (s *constructionAPIService) ConstructionCombine(
 	}
 
 	if len(request.Signatures) != 1 {
-		// TODO better error
-		return nil, ErrUnmarshal
+		terr := ErrInvalidInputParam
+		terr.Message += "need exact 1 signature"
+		return nil, terr
 	}
 
-	// NOTE  clear out payload
-	act.GetCore().GetTransfer().Payload = nil
+	//NOTE clear out sender address in payload before construct final iotex signed action
+	_, pl, err := unmarshalSenderAddrPayload(act.GetCore().GetTransfer().GetPayload())
+	if err != nil {
+		terr := ErrInvalidInputParam
+		terr.Message += "not valid rosetta transfer payload"
+		return nil, terr
+	}
+	act.GetCore().GetTransfer().Payload = pl
+
 	rawPub := request.Signatures[0].PublicKey.Bytes
 	if btcec.IsCompressedPubKey(rawPub) {
 		pubk, err := btcec.ParsePubKey(rawPub, btcec.S256())
 		if err != nil {
-			terr := ErrInvalidPublicKey
-			terr.Message += err.Error()
+			terr := ErrInvalidInputParam
+			terr.Message += "invalid pubkey: " + err.Error()
 			return nil, terr
 		}
 		rawPub = pubk.SerializeUncompressed()
@@ -82,20 +90,18 @@ func (s *constructionAPIService) ConstructionCombine(
 
 	act.SenderPubKey = rawPub
 	rawSig := request.Signatures[0].Bytes
-	if len(rawSig) != 64 && len(rawSig) != 65 {
-		terr := ErrInvalidPublicKey
-		terr.Message += "nvalid signature format"
+	if len(rawSig) != 65 {
+		terr := ErrInvalidInputParam
+		terr.Message += "invalid signature length: " + err.Error()
 		return nil, terr
-	}
-	if len(rawSig) == 64 {
-		rawSig = append(rawSig, 27)
 	}
 	act.Signature = rawSig
 
 	msg, err := proto.Marshal(act)
 	if err != nil {
-		// TODO better error
-		return nil, ErrUnmarshal
+		terr := ErrServiceInternal
+		terr.Message += err.Error()
+		return nil, terr
 	}
 	return &types.ConstructionCombineResponse{
 		SignedTransaction: hex.EncodeToString(msg),
@@ -112,15 +118,17 @@ func (s *constructionAPIService) ConstructionDerive(
 	}
 
 	if len(request.PublicKey.Bytes) == 0 || request.PublicKey.CurveType != CurveType {
-		return nil, ErrUnsupportedPublicKeyType
+		terr := ErrInvalidInputParam
+		terr.Message += "unsupported public key type"
+		return nil, terr
 	}
 
 	rawPub := request.PublicKey.Bytes
 	if btcec.IsCompressedPubKey(rawPub) {
 		pubk, err := btcec.ParsePubKey(rawPub, btcec.S256())
 		if err != nil {
-			terr := ErrInvalidPublicKey
-			terr.Message += err.Error()
+			terr := ErrInvalidInputParam
+			terr.Message += "invalid public key: " + err.Error()
 			return nil, terr
 		}
 		rawPub = pubk.SerializeUncompressed()
@@ -128,14 +136,14 @@ func (s *constructionAPIService) ConstructionDerive(
 
 	pub, err := crypto.BytesToPublicKey(rawPub)
 	if err != nil {
-		terr := ErrInvalidPublicKey
-		terr.Message += err.Error()
+		terr := ErrInvalidInputParam
+		terr.Message += "invalid public key: " + err.Error()
 		return nil, terr
 	}
 	addr, err := address.FromBytes(pub.Hash())
 	if err != nil {
-		terr := ErrInvalidPublicKey
-		terr.Message += err.Error()
+		terr := ErrInvalidInputParam
+		terr.Message += "invalid public key: " + err.Error()
 		return nil, terr
 	}
 	return &types.ConstructionDeriveResponse{
@@ -148,14 +156,14 @@ func (s *constructionAPIService) ConstructionHash(
 	ctx context.Context,
 	request *types.ConstructionHashRequest,
 ) (*types.TransactionIdentifierResponse, *types.Error) {
-	terr := ValidateNetworkIdentifier(ctx, s.client, request.NetworkIdentifier)
-	if terr != nil {
+	if terr := ValidateNetworkIdentifier(ctx, s.client, request.NetworkIdentifier); terr != nil {
 		return nil, terr
 	}
 	tran, err := hex.DecodeString(request.SignedTransaction)
 	if err != nil {
-		// TODO better error
-		return nil, ErrUnmarshal
+		terr := ErrInvalidInputParam
+		terr.Message += "invalid signed transaction format: " + err.Error()
+		return nil, terr
 	}
 	h := hash.Hash256b(tran)
 
@@ -166,44 +174,113 @@ func (s *constructionAPIService) ConstructionHash(
 	}, nil
 }
 
+type metadataInputOptions struct {
+	senderAddress string
+	gasLimit      *uint64
+	gasPrice      *uint64
+	maxFee        *big.Int
+	feeMultiplier *float64
+}
+
+func parseMetadataInputOptions(options map[string]interface{}) (*metadataInputOptions, *types.Error) {
+	opts := &metadataInputOptions{}
+	idRaw, ok := options["sender"]
+	if !ok {
+		terr := ErrInvalidInputParam
+		terr.Message += "empty sender address"
+		return nil, terr
+	}
+
+	var err error
+	opts.senderAddress, err = cast.ToStringE(idRaw)
+	if err != nil {
+		terr := ErrInvalidInputParam
+		terr.Message += err.Error()
+		return nil, terr
+	}
+
+	if rawgl, ok := options["gasLimit"]; ok {
+		gasLimit, err := cast.ToUint64E(rawgl)
+		if err != nil {
+			terr := ErrInvalidInputParam
+			terr.Message += "failed to parse gasLimit: " + err.Error()
+			return nil, terr
+		}
+		opts.gasLimit = &gasLimit
+	}
+
+	if rawgp, ok := options["gasPrice"]; ok {
+		gasPrice, err := cast.ToUint64E(rawgp)
+		if err != nil {
+			terr := ErrInvalidInputParam
+			terr.Message += "failed to parse gasPrice: " + err.Error()
+			return nil, terr
+		}
+		opts.gasPrice = &gasPrice
+	}
+
+	if rawmp, ok := options["feeMultiplier"]; ok {
+		feeMultiplier, err := cast.ToFloat64E(rawmp)
+		if err != nil {
+			terr := ErrInvalidInputParam
+			terr.Message += "failed to parse fee multiplier: " + err.Error()
+			return nil, terr
+		}
+		opts.feeMultiplier = &feeMultiplier
+	}
+
+	if rawmf, ok := options["maxFee"]; ok {
+		maxFeeStr, err := cast.ToStringE(rawmf)
+		if err != nil {
+			terr := ErrInvalidInputParam
+			terr.Message += "failed to parse max fee: " + err.Error()
+			return nil, terr
+		}
+		maxFee, ok := new(big.Int).SetString(maxFeeStr, 10)
+		if !ok {
+			terr := ErrInvalidInputParam
+			terr.Message += "failed to parse max fee"
+			return nil, terr
+		}
+		opts.maxFee = maxFee
+	}
+
+	return opts, nil
+}
+
 // ConstructionMetadata implements the /construction/metadata endpoint.
 func (s *constructionAPIService) ConstructionMetadata(
 	ctx context.Context,
 	request *types.ConstructionMetadataRequest,
 ) (*types.ConstructionMetadataResponse, *types.Error) {
-	terr := ValidateNetworkIdentifier(ctx, s.client, request.NetworkIdentifier)
-	if terr != nil {
+	if terr := ValidateNetworkIdentifier(ctx, s.client, request.NetworkIdentifier); terr != nil {
 		return nil, terr
 	}
 
-	// Get the account ID field from the Options object.
-	if request.Options == nil {
-		return nil, ErrInvalidAccountAddress
+	opts, terr := parseMetadataInputOptions(request.Options)
+	if terr != nil {
+		return nil, terr
 	}
-	idRaw, ok := request.Options["sender"]
-	if !ok {
-		return nil, ErrInvalidAccountAddress
-	}
-	addr, ok := idRaw.(string)
-	if !ok {
-		return nil, ErrInvalidAccountAddress
-	}
-	account, err := s.client.GetAccount(ctx, 0, addr)
+	account, err := s.client.GetAccount(ctx, 0, opts.senderAddress)
 	if err != nil {
-		log.Println("error get account here ", err)
-		return nil, ErrUnableToGetNextNonce
+		terr := ErrUnableToGetAccount
+		terr.Message += err.Error()
+		return nil, terr
 	}
 	meta := account.Metadata
 
-	if _, ok := request.Options["gasLimit"]; !ok {
+	var gasLimit, gasPrice uint64
+	if opts.gasLimit == nil {
 		// need a valid pubkey to estimate, just use one
 		rawPrivKey, err := btcec.NewPrivateKey(btcec.S256())
 		if err != nil {
-			// TODO clean up error
-			return nil, ErrUnableToGetNextNonce
+			terr := ErrServiceInternal
+			terr.Message += err.Error()
+			return nil, terr
 		}
 		rawPubKey := rawPrivKey.PubKey()
-		gasLimit, err := s.client.EstimateGasForAction(ctx, &iotextypes.Action{
+		// XXX once support send out payload, need to pass payload here to get right gaslimit
+		gasLimit, err = s.client.EstimateGasForAction(ctx, &iotextypes.Action{
 			Core: &iotextypes.ActionCore{
 				Action: &iotextypes.ActionCore_Transfer{
 					Transfer: &iotextypes.Transfer{},
@@ -212,23 +289,56 @@ func (s *constructionAPIService) ConstructionMetadata(
 			SenderPubKey: rawPubKey.SerializeUncompressed(),
 		})
 		if err != nil {
-			// TODO clean up error
-			log.Println("error get estimate gas here ", err)
-			return nil, ErrUnableToGetNextNonce
+			terr := ErrUnableToEstimateGas
+			terr.Message += err.Error()
+			return nil, terr
 		}
-		meta["gasLimit"] = gasLimit
+	} else {
+		gasLimit = *opts.gasLimit
 	}
-	if _, ok := request.Options["gasPrice"]; !ok {
-		gasPrice, err := s.client.SuggestGasPrice(ctx)
+
+	if opts.gasPrice == nil {
+		gasPrice, err = s.client.SuggestGasPrice(ctx)
 		if err != nil {
-			// TODO clean up error
-			log.Println("error get SuggestGasPrice gas here ", err)
-			return nil, ErrUnableToGetNextNonce
+			terr := ErrUnableToGetSuggestGas
+			terr.Message += err.Error()
+			return nil, terr
 		}
-		meta["gasPrice"] = gasPrice
+	} else {
+		gasPrice = *opts.gasPrice
 	}
+
+	// apply fee multiplier
+	if opts.feeMultiplier != nil {
+		base := new(big.Float).SetUint64(gasPrice)
+		multiplier := new(big.Float).SetFloat64(*opts.feeMultiplier)
+		gasPrice, _ = new(big.Float).Mul(base, multiplier).Uint64()
+	}
+
+	meta["gasLimit"] = gasLimit
+	meta["gasPrice"] = gasPrice
+	suggestedFee := new(big.Int).Mul(
+		new(big.Int).SetUint64(gasPrice),
+		new(big.Int).SetUint64(gasLimit))
+
+	// check if maxFee >= fee
+	if opts.maxFee != nil {
+		if opts.maxFee.Cmp(suggestedFee) < 0 {
+			return nil, ErrExceededFee
+		}
+	}
+
 	return &types.ConstructionMetadataResponse{
 		Metadata: meta,
+		SuggestedFee: []*types.Amount{
+			&types.Amount{
+				Value: suggestedFee.String(),
+				Currency: &types.Currency{
+					Symbol:   s.client.GetConfig().Currency.Symbol,
+					Decimals: s.client.GetConfig().Currency.Decimals,
+				},
+			},
+		},
 	}, nil
 }
 
@@ -274,30 +384,43 @@ func (s *constructionAPIService) ConstructionPayloads(
 	if err := ValidateNetworkIdentifier(ctx, s.client, request.NetworkIdentifier); err != nil {
 		return nil, err
 	}
-	log.Printf("%+v", request)
 	if err := s.checkOperationAndMeta(request.Operations, request.Metadata, true); err != nil {
 		return nil, err
 	}
 
-	act := s.opsToIoAction(request.Operations, request.Metadata)
-	log.Printf("%+v", act)
+	act, err := s.opsToIoAction(request.Operations, request.Metadata)
+	if err != nil {
+		terr := ErrServiceInternal
+		terr.Message += err.Error()
+		return nil, terr
+	}
 
 	msg, err := proto.Marshal(act)
 	if err != nil {
-		// TODO better error
-		return nil, ErrUnmarshal
+		terr := ErrServiceInternal
+		terr.Message += err.Error()
+		return nil, terr
 	}
+	unsignedTx := hex.EncodeToString(msg)
 
-	// NOTE  unset payload here
-	act.GetCore().GetTransfer().Payload = nil
+	// NOTE  unset sender address in payload here before create data hash which used to sign
+	_, pl, err := unmarshalSenderAddrPayload(act.GetCore().GetTransfer().GetPayload())
+	if err != nil {
+		terr := ErrServiceInternal
+		terr.Message += err.Error()
+		return nil, terr
+	}
+	act.GetCore().GetTransfer().Payload = pl
+
 	core, err := proto.Marshal(act.GetCore())
 	if err != nil {
-		// TODO better error
-		return nil, ErrUnmarshal
+		terr := ErrServiceInternal
+		terr.Message += err.Error()
+		return nil, terr
 	}
 	h := hash.Hash256b(core)
 	return &types.ConstructionPayloadsResponse{
-		UnsignedTransaction: hex.EncodeToString(msg),
+		UnsignedTransaction: unsignedTx,
 		Payloads: []*types.SigningPayload{
 			&types.SigningPayload{
 				Address:       request.Operations[0].Account.Address,
@@ -316,22 +439,39 @@ func (s *constructionAPIService) ConstructionPreprocess(
 	if err := ValidateNetworkIdentifier(ctx, s.client, request.NetworkIdentifier); err != nil {
 		return nil, err
 	}
+
 	if err := s.checkOperationAndMeta(request.Operations, request.Metadata, false); err != nil {
 		return nil, err
 	}
 
 	options := make(map[string]interface{})
+	options["sender"] = request.Operations[0].Account.Address
 	options["amount"] = request.Operations[1].Amount.Value
 	options["symbol"] = request.Operations[1].Amount.Currency.Symbol
 	options["decimals"] = request.Operations[1].Amount.Currency.Decimals
-	options["sender"] = request.Operations[0].Account.Address
 	options["recipient"] = request.Operations[1].Account.Address
-	// TODO it is unclear where these meta data should be
+
+	// XXX it is unclear where these meta data should be
 	if request.Metadata["gasLimit"] != nil {
 		options["gasLimit"] = request.Metadata["gasLimit"]
 	}
 	if request.Metadata["gasPrice"] != nil {
 		options["gasPrice"] = request.Metadata["gasPrice"]
+	}
+
+	// check and set max fee and fee multiplier
+	if len(request.MaxFee) != 0 {
+		maxFee := request.MaxFee[0]
+		if maxFee.Currency.Symbol != s.client.GetConfig().Currency.Symbol ||
+			maxFee.Currency.Decimals != s.client.GetConfig().Currency.Decimals {
+			terr := ErrConstructionCheck
+			terr.Message += "invalid currency"
+			return nil, terr
+		}
+		options["maxFee"] = maxFee.Value
+	}
+	if request.SuggestedFeeMultiplier != nil {
+		options["feeMultiplier"] = *request.SuggestedFeeMultiplier
 	}
 
 	return &types.ConstructionPreprocessResponse{
@@ -350,23 +490,24 @@ func (s *constructionAPIService) ConstructionSubmit(
 	}
 	tran, err := hex.DecodeString(request.SignedTransaction)
 	if err != nil {
-		log.Println("hex", err)
-		return nil, ErrUnableToSubmitTx
+		terr := ErrInvalidInputParam
+		terr.Message += err.Error()
+		return nil, terr
 	}
 
 	act := &iotextypes.Action{}
 	if err := proto.Unmarshal(tran, act); err != nil {
-		log.Println("proto", err)
-		return nil, ErrUnableToSubmitTx
+		terr := ErrInvalidInputParam
+		terr.Message += err.Error()
+		return nil, terr
 	}
 
-	log.Printf("%+v", act)
 	txID, err := s.client.SubmitTx(ctx, act)
 	if err != nil {
-		log.Println("grpc", err)
-		return nil, ErrUnableToSubmitTx
+		terr := ErrUnableToSubmitTx
+		terr.Message += err.Error()
+		return nil, terr
 	}
-	log.Println("hash", txID)
 
 	return &types.TransactionIdentifierResponse{
 		TransactionIdentifier: &types.TransactionIdentifier{
@@ -375,24 +516,28 @@ func (s *constructionAPIService) ConstructionSubmit(
 	}, nil
 }
 
-func (s *constructionAPIService) opsToIoAction(ops []*types.Operation, meta map[string]interface{}) *iotextypes.Action {
+func (s *constructionAPIService) opsToIoAction(ops []*types.Operation, meta map[string]interface{}) (*iotextypes.Action, error) {
 	gasPrice := cast.ToUint64(meta["gasPrice"])
+	// NOTE use payload to pass sender address, if user need to use payload,
+	// need to marshal payload with sender address and real payload
+	payload, err := marshalSenderAddrPayload(ops[0].Account.Address, nil)
+	if err != nil {
+		return nil, err
+	}
 	return &iotextypes.Action{
 		Core: &iotextypes.ActionCore{
 			Action: &iotextypes.ActionCore_Transfer{
 				Transfer: &iotextypes.Transfer{
 					Amount:    ops[1].Amount.Value,
 					Recipient: ops[1].Account.Address,
-					// NOTE use payload to pass sender address, if user need to use payload,
-					// need to marshal payload with sender address and real payload
-					Payload: []byte(ops[0].Account.Address),
+					Payload:   payload,
 				},
 			},
 			GasLimit: cast.ToUint64(meta["gasLimit"]),
 			GasPrice: new(big.Int).SetUint64(gasPrice).String(),
 			Nonce:    cast.ToUint64(meta["nonce"]),
 		},
-	}
+	}, nil
 }
 
 func (s *constructionAPIService) ioActionToOps(sender string, act *iotextypes.Action) ([]*types.Operation, map[string]interface{}) {
@@ -522,7 +667,12 @@ func (s *constructionAPIService) checkIoAction(act *iotextypes.Action, signed bo
 
 	if !signed {
 		// NOTE use payload to pass sender address
-		return string(act.GetCore().GetTransfer().GetPayload()), nil
+		sender, _, err := unmarshalSenderAddrPayload(act.GetCore().GetTransfer().GetPayload())
+		if err != nil {
+			terr.Message += "not valid rosetta transfer payload"
+			return "", terr
+		}
+		return sender, nil
 	}
 	act.GetCore().GetTransfer().Payload = nil
 
@@ -546,8 +696,9 @@ func (s *constructionAPIService) checkIoAction(act *iotextypes.Action, signed bo
 
 	core, err := proto.Marshal(act.GetCore())
 	if err != nil {
-		// TODO better error
-		return "", ErrUnmarshal
+		terr = ErrServiceInternal
+		terr.Message += err.Error()
+		return "", terr
 	}
 	h := hash.Hash256b(core)
 	if !pub.Verify(h[:], act.GetSignature()) {
@@ -555,13 +706,4 @@ func (s *constructionAPIService) checkIoAction(act *iotextypes.Action, signed bo
 		return "", terr
 	}
 	return sender, nil
-}
-
-func actionType(pbAct *iotextypes.ActionCore) string {
-	switch {
-	case pbAct.GetTransfer() != nil:
-		return "NATIVE_TRANSFER"
-	default:
-		return ""
-	}
 }

@@ -33,7 +33,7 @@
    "decimals": 18
   },
   "minimum_balance": "0",
-  "maximum_fee": "10000000000000",
+  "maximum_fee": "10000000000000000",
   "curve_type": "secp256k1",
   "accounting_model": "account",
   "scenario": [

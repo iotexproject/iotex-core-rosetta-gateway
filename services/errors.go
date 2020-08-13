@@ -117,9 +117,9 @@ var (
 		Retriable: true,
 	}
 
-	ErrInvalidPublicKey = &types.Error{
+	ErrInvalidInputParam = &types.Error{
 		Code:      19,
-		Message:   "unable to convert public key to address",
+		Message:   "Invalid input param: ",
 		Retriable: false,
 	}
 
@@ -153,6 +153,30 @@ var (
 		Retriable: true,
 	}
 
+	ErrServiceInternal = &types.Error{
+		Code:      25,
+		Message:   "Internal error: ",
+		Retriable: false,
+	}
+
+	ErrExceededFee = &types.Error{
+		Code:      26,
+		Message:   "exceeded max fee",
+		Retriable: false,
+	}
+
+	ErrUnableToEstimateGas = &types.Error{
+		Code:      27,
+		Message:   "unable to estimate gas: ",
+		Retriable: false,
+	}
+
+	ErrUnableToGetSuggestGas = &types.Error{
+		Code:      28,
+		Message:   "unable to get suggest gas: ",
+		Retriable: false,
+	}
+
 	ErrorList = []*types.Error{
 		ErrUnableToGetChainID,
 		ErrInvalidBlockchain,
@@ -172,11 +196,15 @@ var (
 		ErrUnableToGetNextNonce,
 		ErrMalformedValue,
 		ErrUnableToGetNodeStatus,
-		ErrInvalidPublicKey,
+		ErrInvalidInputParam,
 		ErrUnsupportedPublicKeyType,
 		ErrUnableToParseTx,
 		ErrInvalidGasPrice,
 		ErrUnmarshal,
 		ErrConstructionCheck,
+		ErrServiceInternal,
+		ErrExceededFee,
+		ErrUnableToEstimateGas,
+		ErrUnableToGetSuggestGas,
 	}
 )
