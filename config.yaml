@@ -8,4 +8,4 @@ server:
   port: 8080
   endpoint: api.testnet.iotex.one:443
   secureEndpoint: true
-  rosettaVersion: 1.4.1
+  rosettaVersion: 1.4.2

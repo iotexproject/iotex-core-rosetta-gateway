@@ -7,4 +7,4 @@ currency:
 server:
   port: 8080
   endpoint: 127.0.0.1:14014
-  rosettaVersion: 1.4.1
+  rosettaVersion: 1.4.2
