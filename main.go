@@ -7,7 +7,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -68,7 +67,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("ERROR: Failed to init router: %v\n", err)
 	}
-	fmt.Println("listen", "0.0.0.0:"+cfg.Server.Port)
+	log.Println("listen", "0.0.0.0:"+cfg.Server.Port)
 	if err := http.ListenAndServe("0.0.0.0:"+cfg.Server.Port, router); err != nil {
 		log.Fatalf("IoTex Rosetta Gateway server exited with error: %v\n", err)
 	}
