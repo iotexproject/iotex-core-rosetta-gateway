@@ -68,15 +68,6 @@ func (s *constructionAPIService) ConstructionCombine(
 		return nil, terr
 	}
 
-	//NOTE clear out sender address in payload before construct final iotex signed action
-	_, pl, err := unmarshalSenderAddrPayload(act.GetCore().GetTransfer().GetPayload())
-	if err != nil {
-		terr := ErrInvalidInputParam
-		terr.Message += "not valid rosetta transfer payload"
-		return nil, terr
-	}
-	act.GetCore().GetTransfer().Payload = pl
-
 	rawPub := request.Signatures[0].PublicKey.Bytes
 	if btcec.IsCompressedPubKey(rawPub) {
 		pubk, err := btcec.ParsePubKey(rawPub, btcec.S256())
@@ -87,8 +78,9 @@ func (s *constructionAPIService) ConstructionCombine(
 		}
 		rawPub = pubk.SerializeUncompressed()
 	}
-
+	//NOTE set right sender pubkey here
 	act.SenderPubKey = rawPub
+
 	rawSig := request.Signatures[0].Bytes
 	if len(rawSig) != 65 {
 		terr := ErrInvalidInputParam
@@ -180,6 +172,7 @@ type metadataInputOptions struct {
 	gasPrice      *uint64
 	maxFee        *big.Int
 	feeMultiplier *float64
+	typ           iotextypes.TransactionLogType
 }
 
 func parseMetadataInputOptions(options map[string]interface{}) (*metadataInputOptions, *types.Error) {
@@ -198,6 +191,24 @@ func parseMetadataInputOptions(options map[string]interface{}) (*metadataInputOp
 		terr.Message += err.Error()
 		return nil, terr
 	}
+
+	if _, ok := options["type"]; !ok {
+		terr := ErrInvalidInputParam
+		terr.Message += "empty operation type"
+		return nil, terr
+	}
+	typ, err := cast.ToStringE(options["type"])
+	if err != nil {
+		terr := ErrInvalidInputParam
+		terr.Message += "failed to parse type: " + err.Error()
+		return nil, terr
+	}
+	if !IsSupportedConstructionType(typ) {
+		terr := ErrInvalidInputParam
+		terr.Message += "unsupported type"
+		return nil, terr
+	}
+	opts.typ = iotextypes.TransactionLogType(iotextypes.TransactionLogType_value[typ])
 
 	if rawgl, ok := options["gasLimit"]; ok {
 		gasLimit, err := cast.ToUint64E(rawgl)
@@ -248,6 +259,31 @@ func parseMetadataInputOptions(options map[string]interface{}) (*metadataInputOp
 	return opts, nil
 }
 
+func estimateGasAction(opts *metadataInputOptions) (*iotextypes.Action, *types.Error) {
+	// need a valid pubkey to estimate, just use one
+	rawPrivKey, err := btcec.NewPrivateKey(btcec.S256())
+	if err != nil {
+		terr := ErrServiceInternal
+		terr.Message += err.Error()
+		return nil, terr
+	}
+	rawPubKey := rawPrivKey.PubKey()
+	act := &iotextypes.Action{
+		SenderPubKey: rawPubKey.SerializeUncompressed(),
+	}
+
+	switch opts.typ {
+	// XXX once support send out payload, need to pass payload here to get right gaslimit
+	case iotextypes.TransactionLogType_NATIVE_TRANSFER:
+		act.Core = &iotextypes.ActionCore{
+			Action: &iotextypes.ActionCore_Transfer{
+				Transfer: &iotextypes.Transfer{},
+			},
+		}
+	}
+	return act, nil
+}
+
 // ConstructionMetadata implements the /construction/metadata endpoint.
 func (s *constructionAPIService) ConstructionMetadata(
 	ctx context.Context,
@@ -271,23 +307,11 @@ func (s *constructionAPIService) ConstructionMetadata(
 
 	var gasLimit, gasPrice uint64
 	if opts.gasLimit == nil {
-		// need a valid pubkey to estimate, just use one
-		rawPrivKey, err := btcec.NewPrivateKey(btcec.S256())
-		if err != nil {
-			terr := ErrServiceInternal
-			terr.Message += err.Error()
+		estAct, terr := estimateGasAction(opts)
+		if terr != nil {
 			return nil, terr
 		}
-		rawPubKey := rawPrivKey.PubKey()
-		// XXX once support send out payload, need to pass payload here to get right gaslimit
-		gasLimit, err = s.client.EstimateGasForAction(ctx, &iotextypes.Action{
-			Core: &iotextypes.ActionCore{
-				Action: &iotextypes.ActionCore_Transfer{
-					Transfer: &iotextypes.Transfer{},
-				},
-			},
-			SenderPubKey: rawPubKey.SerializeUncompressed(),
-		})
+		gasLimit, err = s.client.EstimateGasForAction(ctx, estAct)
 		if err != nil {
 			terr := ErrUnableToEstimateGas
 			terr.Message += err.Error()
@@ -388,13 +412,7 @@ func (s *constructionAPIService) ConstructionPayloads(
 		return nil, err
 	}
 
-	act, err := s.opsToIoAction(request.Operations, request.Metadata)
-	if err != nil {
-		terr := ErrServiceInternal
-		terr.Message += err.Error()
-		return nil, terr
-	}
-
+	act := s.opsToIoAction(request.Operations, request.Metadata)
 	msg, err := proto.Marshal(act)
 	if err != nil {
 		terr := ErrServiceInternal
@@ -402,15 +420,6 @@ func (s *constructionAPIService) ConstructionPayloads(
 		return nil, terr
 	}
 	unsignedTx := hex.EncodeToString(msg)
-
-	// NOTE  unset sender address in payload here before create data hash which used to sign
-	_, pl, err := unmarshalSenderAddrPayload(act.GetCore().GetTransfer().GetPayload())
-	if err != nil {
-		terr := ErrServiceInternal
-		terr.Message += err.Error()
-		return nil, terr
-	}
-	act.GetCore().GetTransfer().Payload = pl
 
 	core, err := proto.Marshal(act.GetCore())
 	if err != nil {
@@ -446,6 +455,7 @@ func (s *constructionAPIService) ConstructionPreprocess(
 
 	options := make(map[string]interface{})
 	options["sender"] = request.Operations[0].Account.Address
+	options["type"] = request.Operations[0].Type
 	options["amount"] = request.Operations[1].Amount.Value
 	options["symbol"] = request.Operations[1].Amount.Currency.Symbol
 	options["decimals"] = request.Operations[1].Amount.Currency.Decimals
@@ -516,27 +526,23 @@ func (s *constructionAPIService) ConstructionSubmit(
 	}, nil
 }
 
-func (s *constructionAPIService) opsToIoAction(ops []*types.Operation, meta map[string]interface{}) (*iotextypes.Action, error) {
-	// NOTE use payload to pass sender address, if user need to use payload,
-	// need to marshal payload with sender address and real payload
-	payload, err := marshalSenderAddrPayload(ops[0].Account.Address, nil)
-	if err != nil {
-		return nil, err
-	}
-	return &iotextypes.Action{
+func (s *constructionAPIService) opsToIoAction(ops []*types.Operation, meta map[string]interface{}) *iotextypes.Action {
+	act := &iotextypes.Action{
 		Core: &iotextypes.ActionCore{
-			Action: &iotextypes.ActionCore_Transfer{
-				Transfer: &iotextypes.Transfer{
-					Amount:    ops[1].Amount.Value,
-					Recipient: ops[1].Account.Address,
-					Payload:   payload,
-				},
-			},
 			GasLimit: cast.ToUint64(meta["gasLimit"]),
 			GasPrice: new(big.Int).SetUint64(cast.ToUint64(meta["gasPrice"])).String(),
 			Nonce:    cast.ToUint64(meta["nonce"]),
 		},
-	}, nil
+		// NOTE use SenderPubKey field to temporary pass sender address,
+		// since rosetta-cli need to verify sender address in operations.
+		SenderPubKey: []byte(ops[0].Account.Address),
+	}
+
+	switch iotextypes.TransactionLogType(iotextypes.TransactionLogType_value[ops[0].Type]) {
+	case iotextypes.TransactionLogType_NATIVE_TRANSFER:
+		act.Core.Action = &iotextypes.ActionCore_Transfer{Transfer: opsToIoTransfer(ops)}
+	}
+	return act
 }
 
 func (s *constructionAPIService) ioActionToOps(sender string, act *iotextypes.Action) ([]*types.Operation, map[string]interface{}) {
@@ -546,85 +552,38 @@ func (s *constructionAPIService) ioActionToOps(sender string, act *iotextypes.Ac
 	gasPrice, _ := new(big.Int).SetString(act.GetCore().GetGasPrice(), 10)
 	meta["gasPrice"] = gasPrice.Uint64()
 
-	ops := []*types.Operation{
-		&types.Operation{
-			OperationIdentifier: &types.OperationIdentifier{
-				Index: 0,
-			},
-			Type: "NATIVE_TRANSFER",
-			Account: &types.AccountIdentifier{
-				Address: sender,
-			},
-			Amount: &types.Amount{
-				Value: "-" + act.GetCore().GetTransfer().GetAmount(),
-				Currency: &types.Currency{
-					Symbol:   s.client.GetConfig().Currency.Symbol,
-					Decimals: s.client.GetConfig().Currency.Decimals,
-				},
-			},
-		},
-		&types.Operation{
-			OperationIdentifier: &types.OperationIdentifier{
-				Index: 1,
-			},
-			RelatedOperations: []*types.OperationIdentifier{&types.OperationIdentifier{
-				Index: 0,
-			}},
-			Type: "NATIVE_TRANSFER",
-			Account: &types.AccountIdentifier{
-				Address: act.GetCore().GetTransfer().GetRecipient(),
-			},
-			Amount: &types.Amount{
-				Value: act.GetCore().GetTransfer().GetAmount(),
-				Currency: &types.Currency{
-					Symbol:   s.client.GetConfig().Currency.Symbol,
-					Decimals: s.client.GetConfig().Currency.Decimals,
-				},
-			},
-		},
+	actCore := act.GetCore()
+	var ops []*types.Operation
+	switch {
+	case actCore.GetTransfer() != nil:
+		ops = ioTransferToOps(sender, actCore.GetTransfer(), &types.Currency{
+			Symbol:   s.client.GetConfig().Currency.Symbol,
+			Decimals: s.client.GetConfig().Currency.Decimals,
+		})
 	}
-
 	return ops, meta
 }
 
 func (s *constructionAPIService) checkOperationAndMeta(ops []*types.Operation, meta map[string]interface{}, mustMeta bool) *types.Error {
+
 	terr := ErrConstructionCheck
-	if len(ops) != 2 {
+	if len(ops) == 0 {
 		terr.Message += "operation numbers are no expected"
 		return terr
 	}
-
-	// check amount
-	if ops[0].Amount.Value != "-"+ops[1].Amount.Value {
-		terr.Message += "amount value don't match"
+	typ := ops[0].Type
+	if !IsSupportedConstructionType(typ) {
+		terr.Message += "unsupported construction type"
 		return terr
 	}
-	amountStr := ops[1].Amount.Value
-	_, ok := new(big.Int).SetString(amountStr, 10)
-	if !ok {
-		terr.Message += "amount value is invalid"
-		return terr
-	}
-
-	// check currency
-	symbol := ops[1].Amount.Currency.Symbol
-	decimals := ops[1].Amount.Currency.Decimals
-	if symbol != s.client.GetConfig().Currency.Symbol ||
-		decimals != s.client.GetConfig().Currency.Decimals {
-		terr.Message += "invalid currency"
-		return terr
-	}
-
-	// check address
-	_, err := address.FromString(ops[0].Account.Address)
-	if err != nil {
-		terr.Message += "invalid sender address"
-		return terr
-	}
-	_, err = address.FromString(ops[1].Account.Address)
-	if err != nil {
-		terr.Message += "invalid recipient address"
-		return terr
+	switch iotextypes.TransactionLogType(iotextypes.TransactionLogType_value[typ]) {
+	case iotextypes.TransactionLogType_NATIVE_TRANSFER:
+		if terr := checkTransferOps(ops, &types.Currency{
+			Symbol:   s.client.GetConfig().Currency.Symbol,
+			Decimals: s.client.GetConfig().Currency.Decimals,
+		}); terr != nil {
+			return terr
+		}
 	}
 
 	// check metadata exists
@@ -665,15 +624,9 @@ func (s *constructionAPIService) checkIoAction(act *iotextypes.Action, signed bo
 	}
 
 	if !signed {
-		// NOTE use payload to pass sender address
-		sender, _, err := unmarshalSenderAddrPayload(act.GetCore().GetTransfer().GetPayload())
-		if err != nil {
-			terr.Message += "not valid rosetta transfer payload"
-			return "", terr
-		}
-		return sender, nil
+		// NOTE use SenderPubKey to pass sender address
+		return string(act.GetSenderPubKey()), nil
 	}
-	act.GetCore().GetTransfer().Payload = nil
 
 	// check pubkey and address
 	if len(act.GetSenderPubKey()) == 0 {

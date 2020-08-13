@@ -77,7 +77,7 @@
     }
    }
   ],
-  "confirmation_depth": 10,
+  "confirmation_depth": 5,
   "stale_depth": 30,
   "broadcast_limit": 3,
   "ignore_broadcast_failures": false,

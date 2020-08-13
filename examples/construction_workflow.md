@@ -10,7 +10,7 @@ Request
 		"network": "testnet"
 	},
 	"public_key": {
-		"hex_bytes": "036a5affe4a290076da7dfc0bd3b3adc722e3310e369b0224feac8ee2a50727443",
+		"hex_bytes": "03a1ace8521ab5b2dcadba9af4c0ca65963c3e3e3a3306031486acdc83ec54e7ad",
 		"curve_type": "secp256k1"
 	}
 }
@@ -19,7 +19,7 @@ Request
 Response
 ```json
 {
-	"address": "io1lacjkkue6k20x6dhldx5ksnaz7qxgup6jecd62"
+	"address": "io1pc5nr6s6047ldtg0whkjuujs9yeerzcexwz6nh"
 }
 ```
 
@@ -28,51 +28,46 @@ Response
 Request
 ```json
 {
-   "network_identifier":{
-      "blockchain":"IoTeX",
-      "network":"testnet"
-   },
-   "operations":[
-      {
-         "operation_identifier":{
-            "index":0
-         },
-         "type":"NATIVE_TRANSFER",
-         "status":"",
-         "account":{
-            "address":"io1lacjkkue6k20x6dhldx5ksnaz7qxgup6jecd62"
-         },
-         "amount":{
-            "value":"-1654892007125194610",
-            "currency":{
-               "symbol":"IOTX",
-               "decimals":18
-            }
-         }
-      },
-      {
-         "operation_identifier":{
-            "index":1
-         },
-         "related_operations":[
-            {
-               "index":0
-            }
-         ],
-         "type":"NATIVE_TRANSFER",
-         "status":"",
-         "account":{
-            "address":"io14yt2xwk953wps5d264gvqq53lvvg9hfzu4mzsc"
-         },
-         "amount":{
-            "value":"1654892007125194610",
-            "currency":{
-               "symbol":"IOTX",
-               "decimals":18
-            }
-         }
-      }
-   ]
+	"network_identifier": {
+		"blockchain": "IoTeX",
+		"network": "testnet"
+	},
+	"operations": [{
+		"operation_identifier": {
+			"index": 0
+		},
+		"type": "NATIVE_TRANSFER",
+		"status": "",
+		"account": {
+			"address": "io1pc5nr6s6047ldtg0whkjuujs9yeerzcexwz6nh"
+		},
+		"amount": {
+			"value": "-5619726348293826415",
+			"currency": {
+				"symbol": "IOTX",
+				"decimals": 18
+			}
+		}
+	}, {
+		"operation_identifier": {
+			"index": 1
+		},
+		"related_operations": [{
+			"index": 0
+		}],
+		"type": "NATIVE_TRANSFER",
+		"status": "",
+		"account": {
+			"address": "io1p395hdexlwsqphhg8p42n6ljmnzzzd0d3y8kta"
+		},
+		"amount": {
+			"value": "5619726348293826415",
+			"currency": {
+				"symbol": "IOTX",
+				"decimals": 18
+			}
+		}
+	}]
 }
 ```
 
@@ -80,11 +75,12 @@ Response
 ```json
 {
 	"options": {
-		"amount": "1654892007125194610",
+		"amount": "5619726348293826415",
 		"decimals": 18,
-		"recipient": "io14yt2xwk953wps5d264gvqq53lvvg9hfzu4mzsc",
-		"sender": "io1lacjkkue6k20x6dhldx5ksnaz7qxgup6jecd62",
-		"symbol": "IOTX"
+		"recipient": "io1p395hdexlwsqphhg8p42n6ljmnzzzd0d3y8kta",
+		"sender": "io1pc5nr6s6047ldtg0whkjuujs9yeerzcexwz6nh",
+		"symbol": "IOTX",
+		"type": "NATIVE_TRANSFER"
 	}
 }
 ```
@@ -99,11 +95,12 @@ Request
 		"network": "testnet"
 	},
 	"options": {
-		"amount": "1654892007125194610",
+		"amount": "5619726348293826415",
 		"decimals": 18,
-		"recipient": "io14yt2xwk953wps5d264gvqq53lvvg9hfzu4mzsc",
-		"sender": "io1lacjkkue6k20x6dhldx5ksnaz7qxgup6jecd62",
-		"symbol": "IOTX"
+		"recipient": "io1p395hdexlwsqphhg8p42n6ljmnzzzd0d3y8kta",
+		"sender": "io1pc5nr6s6047ldtg0whkjuujs9yeerzcexwz6nh",
+		"symbol": "IOTX",
+		"type": "NATIVE_TRANSFER"
 	}
 }
 ```
@@ -142,10 +139,10 @@ Request
 		"type": "NATIVE_TRANSFER",
 		"status": "",
 		"account": {
-			"address": "io1lacjkkue6k20x6dhldx5ksnaz7qxgup6jecd62"
+			"address": "io1pc5nr6s6047ldtg0whkjuujs9yeerzcexwz6nh"
 		},
 		"amount": {
-			"value": "-1654892007125194610",
+			"value": "-5619726348293826415",
 			"currency": {
 				"symbol": "IOTX",
 				"decimals": 18
@@ -161,10 +158,10 @@ Request
 		"type": "NATIVE_TRANSFER",
 		"status": "",
 		"account": {
-			"address": "io14yt2xwk953wps5d264gvqq53lvvg9hfzu4mzsc"
+			"address": "io1p395hdexlwsqphhg8p42n6ljmnzzzd0d3y8kta"
 		},
 		"amount": {
-			"value": "1654892007125194610",
+			"value": "5619726348293826415",
 			"currency": {
 				"symbol": "IOTX",
 				"decimals": 18
@@ -182,10 +179,10 @@ Request
 Response
 ```json
 {
-	"unsigned_transaction": "0aa901100118904e220d313030303030303030303030305292010a13313635343839323030373132353139343631301229696f313479743278776b39353377707335643236346776717135336c7676673968667a75346d7a73631a507b2253656e64657241646472657373223a22696f316c61636a6b6b7565366b3230783664686c6478356b736e617a377178677570366a6563643632222c225265616c5061796c6f6164223a6e756c6c7d",
+	"unsigned_transaction": "0a56100118904e220d3130303030303030303030303052400a13353631393732363334383239333832363431351229696f3170333935686465786c77737170686867387034326e366c6a6d6e7a7a7a6430643379386b74611229696f317063356e723673363034376c6474673077686b6a75756a7339796565727a636578777a366e68",
 	"payloads": [{
-		"hex_bytes": "861e40e717c21c7ae80fc9639f26b2726a66cd3a5e224fbbb62c78405627fcec",
-		"address": "io1lacjkkue6k20x6dhldx5ksnaz7qxgup6jecd62",
+		"hex_bytes": "ca671c6d94c90608d5ee6ac8372cb262308285b46f38052663e9ca7773a84480",
+		"address": "io1pc5nr6s6047ldtg0whkjuujs9yeerzcexwz6nh",
 		"signature_type": "ecdsa_recovery"
 	}]
 }
@@ -201,7 +198,7 @@ Request
 		"network": "testnet"
 	},
 	"signed": false,
-	"transaction": "0aa901100118904e220d313030303030303030303030305292010a13313635343839323030373132353139343631301229696f313479743278776b39353377707335643236346776717135336c7676673968667a75346d7a73631a507b2253656e64657241646472657373223a22696f316c61636a6b6b7565366b3230783664686c6478356b736e617a377178677570366a6563643632222c225265616c5061796c6f6164223a6e756c6c7d"
+	"transaction": "0a56100118904e220d3130303030303030303030303052400a13353631393732363334383239333832363431351229696f3170333935686465786c77737170686867387034326e366c6a6d6e7a7a7a6430643379386b74611229696f317063356e723673363034376c6474673077686b6a75756a7339796565727a636578777a366e68"
 }
 ```
 
@@ -215,10 +212,10 @@ Response
 		"type": "NATIVE_TRANSFER",
 		"status": "",
 		"account": {
-			"address": "io1lacjkkue6k20x6dhldx5ksnaz7qxgup6jecd62"
+			"address": "io1pc5nr6s6047ldtg0whkjuujs9yeerzcexwz6nh"
 		},
 		"amount": {
-			"value": "-1654892007125194610",
+			"value": "-5619726348293826415",
 			"currency": {
 				"symbol": "IOTX",
 				"decimals": 18
@@ -234,10 +231,10 @@ Response
 		"type": "NATIVE_TRANSFER",
 		"status": "",
 		"account": {
-			"address": "io14yt2xwk953wps5d264gvqq53lvvg9hfzu4mzsc"
+			"address": "io1p395hdexlwsqphhg8p42n6ljmnzzzd0d3y8kta"
 		},
 		"amount": {
-			"value": "1654892007125194610",
+			"value": "5619726348293826415",
 			"currency": {
 				"symbol": "IOTX",
 				"decimals": 18
@@ -262,16 +259,16 @@ Request
 		"blockchain": "IoTeX",
 		"network": "testnet"
 	},
-	"unsigned_transaction": "0aa901100118904e220d313030303030303030303030305292010a13313635343839323030373132353139343631301229696f313479743278776b39353377707335643236346776717135336c7676673968667a75346d7a73631a507b2253656e64657241646472657373223a22696f316c61636a6b6b7565366b3230783664686c6478356b736e617a377178677570366a6563643632222c225265616c5061796c6f6164223a6e756c6c7d",
+	"unsigned_transaction": "0a56100118904e220d3130303030303030303030303052400a13353631393732363334383239333832363431351229696f3170333935686465786c77737170686867387034326e366c6a6d6e7a7a7a6430643379386b74611229696f317063356e723673363034376c6474673077686b6a75756a7339796565727a636578777a366e68",
 	"signatures": [{
-		"hex_bytes": "3bf81c991e33188ad0f300cd341637c93fa44e3e6cca7e1467469c078af5f7cf45bd2d782be25dbe1955496334cfa485893dbddf991247df29b76bb72a0b658601",
+		"hex_bytes": "2d2d5cb0b6096710a2e186ad4760bfb4f83ecec8d7c21961c9cab966d4517e8a727cf6d6cfb31bcbc9affc6f561221ca9950619a776496be0dacbcd46913979500",
 		"signing_payload": {
-			"hex_bytes": "861e40e717c21c7ae80fc9639f26b2726a66cd3a5e224fbbb62c78405627fcec",
-			"address": "io1lacjkkue6k20x6dhldx5ksnaz7qxgup6jecd62",
+			"hex_bytes": "ca671c6d94c90608d5ee6ac8372cb262308285b46f38052663e9ca7773a84480",
+			"address": "io1pc5nr6s6047ldtg0whkjuujs9yeerzcexwz6nh",
 			"signature_type": "ecdsa_recovery"
 		},
 		"public_key": {
-			"hex_bytes": "036a5affe4a290076da7dfc0bd3b3adc722e3310e369b0224feac8ee2a50727443",
+			"hex_bytes": "03a1ace8521ab5b2dcadba9af4c0ca65963c3e3e3a3306031486acdc83ec54e7ad",
 			"curve_type": "secp256k1"
 		},
 		"signature_type": "ecdsa_recovery"
@@ -282,7 +279,7 @@ Request
 Response
 ```json
 {
-	"signed_transaction": "0a56100118904e220d3130303030303030303030303052400a13313635343839323030373132353139343631301229696f313479743278776b39353377707335643236346776717135336c7676673968667a75346d7a73631241046a5affe4a290076da7dfc0bd3b3adc722e3310e369b0224feac8ee2a5072744355d424c71120a2c399317ee689d5bafe8ce7776c5e0f877d5bc69ad4369c94a51a413bf81c991e33188ad0f300cd341637c93fa44e3e6cca7e1467469c078af5f7cf45bd2d782be25dbe1955496334cfa485893dbddf991247df29b76bb72a0b658601"
+	"signed_transaction": "0a56100118904e220d3130303030303030303030303052400a13353631393732363334383239333832363431351229696f3170333935686465786c77737170686867387034326e366c6a6d6e7a7a7a6430643379386b7461124104a1ace8521ab5b2dcadba9af4c0ca65963c3e3e3a3306031486acdc83ec54e7ad73cd26c6097157561098da5768bb2f9f052227b882d366fc52b1681b2e7806f11a412d2d5cb0b6096710a2e186ad4760bfb4f83ecec8d7c21961c9cab966d4517e8a727cf6d6cfb31bcbc9affc6f561221ca9950619a776496be0dacbcd46913979500"
 }
 ```
 
@@ -296,7 +293,7 @@ Request
 		"network": "testnet"
 	},
 	"signed": true,
-	"transaction": "0a56100118904e220d3130303030303030303030303052400a13313635343839323030373132353139343631301229696f313479743278776b39353377707335643236346776717135336c7676673968667a75346d7a73631241046a5affe4a290076da7dfc0bd3b3adc722e3310e369b0224feac8ee2a5072744355d424c71120a2c399317ee689d5bafe8ce7776c5e0f877d5bc69ad4369c94a51a413bf81c991e33188ad0f300cd341637c93fa44e3e6cca7e1467469c078af5f7cf45bd2d782be25dbe1955496334cfa485893dbddf991247df29b76bb72a0b658601"
+	"transaction": "0a56100118904e220d3130303030303030303030303052400a13353631393732363334383239333832363431351229696f3170333935686465786c77737170686867387034326e366c6a6d6e7a7a7a6430643379386b7461124104a1ace8521ab5b2dcadba9af4c0ca65963c3e3e3a3306031486acdc83ec54e7ad73cd26c6097157561098da5768bb2f9f052227b882d366fc52b1681b2e7806f11a412d2d5cb0b6096710a2e186ad4760bfb4f83ecec8d7c21961c9cab966d4517e8a727cf6d6cfb31bcbc9affc6f561221ca9950619a776496be0dacbcd46913979500"
 }
 ```
 
@@ -310,10 +307,10 @@ Response
 		"type": "NATIVE_TRANSFER",
 		"status": "",
 		"account": {
-			"address": "io1lacjkkue6k20x6dhldx5ksnaz7qxgup6jecd62"
+			"address": "io1pc5nr6s6047ldtg0whkjuujs9yeerzcexwz6nh"
 		},
 		"amount": {
-			"value": "-1654892007125194610",
+			"value": "-5619726348293826415",
 			"currency": {
 				"symbol": "IOTX",
 				"decimals": 18
@@ -329,17 +326,17 @@ Response
 		"type": "NATIVE_TRANSFER",
 		"status": "",
 		"account": {
-			"address": "io14yt2xwk953wps5d264gvqq53lvvg9hfzu4mzsc"
+			"address": "io1p395hdexlwsqphhg8p42n6ljmnzzzd0d3y8kta"
 		},
 		"amount": {
-			"value": "1654892007125194610",
+			"value": "5619726348293826415",
 			"currency": {
 				"symbol": "IOTX",
 				"decimals": 18
 			}
 		}
 	}],
-	"signers": ["io1lacjkkue6k20x6dhldx5ksnaz7qxgup6jecd62"],
+	"signers": ["io1pc5nr6s6047ldtg0whkjuujs9yeerzcexwz6nh"],
 	"metadata": {
 		"gasLimit": 10000,
 		"gasPrice": 1000000000000,
@@ -357,7 +354,7 @@ Request
 		"blockchain": "IoTeX",
 		"network": "testnet"
 	},
-	"signed_transaction": "0a56100118904e220d3130303030303030303030303052400a13313635343839323030373132353139343631301229696f313479743278776b39353377707335643236346776717135336c7676673968667a75346d7a73631241046a5affe4a290076da7dfc0bd3b3adc722e3310e369b0224feac8ee2a5072744355d424c71120a2c399317ee689d5bafe8ce7776c5e0f877d5bc69ad4369c94a51a413bf81c991e33188ad0f300cd341637c93fa44e3e6cca7e1467469c078af5f7cf45bd2d782be25dbe1955496334cfa485893dbddf991247df29b76bb72a0b658601"
+	"signed_transaction": "0a56100118904e220d3130303030303030303030303052400a13353631393732363334383239333832363431351229696f3170333935686465786c77737170686867387034326e366c6a6d6e7a7a7a6430643379386b7461124104a1ace8521ab5b2dcadba9af4c0ca65963c3e3e3a3306031486acdc83ec54e7ad73cd26c6097157561098da5768bb2f9f052227b882d366fc52b1681b2e7806f11a412d2d5cb0b6096710a2e186ad4760bfb4f83ecec8d7c21961c9cab966d4517e8a727cf6d6cfb31bcbc9affc6f561221ca9950619a776496be0dacbcd46913979500"
 }
 ```
 
@@ -365,7 +362,7 @@ Response
 ```json
 {
 	"transaction_identifier": {
-		"hash": "6d4cf37497c45f5d06087329ccb7c81b0982a276d0b59dd72a3ebef4ce41f266"
+		"hash": "0c931bf5f2754e1464e6d335be9f498f5618b8b9fd1f038178b4697813628c45"
 	}
 }
 ```
@@ -379,7 +376,7 @@ Request
 		"blockchain": "IoTeX",
 		"network": "testnet"
 	},
-	"signed_transaction": "0a56100118904e220d3130303030303030303030303052400a13313635343839323030373132353139343631301229696f313479743278776b39353377707335643236346776717135336c7676673968667a75346d7a73631241046a5affe4a290076da7dfc0bd3b3adc722e3310e369b0224feac8ee2a5072744355d424c71120a2c399317ee689d5bafe8ce7776c5e0f877d5bc69ad4369c94a51a413bf81c991e33188ad0f300cd341637c93fa44e3e6cca7e1467469c078af5f7cf45bd2d782be25dbe1955496334cfa485893dbddf991247df29b76bb72a0b658601"
+	"signed_transaction": "0a56100118904e220d3130303030303030303030303052400a13353631393732363334383239333832363431351229696f3170333935686465786c77737170686867387034326e366c6a6d6e7a7a7a6430643379386b7461124104a1ace8521ab5b2dcadba9af4c0ca65963c3e3e3a3306031486acdc83ec54e7ad73cd26c6097157561098da5768bb2f9f052227b882d366fc52b1681b2e7806f11a412d2d5cb0b6096710a2e186ad4760bfb4f83ecec8d7c21961c9cab966d4517e8a727cf6d6cfb31bcbc9affc6f561221ca9950619a776496be0dacbcd46913979500"
 }
 ```
 
@@ -387,7 +384,7 @@ Response
 ```json
 {
 	"transaction_identifier": {
-		"hash": "6d4cf37497c45f5d06087329ccb7c81b0982a276d0b59dd72a3ebef4ce41f266"
+		"hash": "0c931bf5f2754e1464e6d335be9f498f5618b8b9fd1f038178b4697813628c45"
 	}
 }
 ```
