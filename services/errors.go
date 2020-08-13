@@ -168,13 +168,13 @@ var (
 	ErrUnableToEstimateGas = &types.Error{
 		Code:      27,
 		Message:   "unable to estimate gas: ",
-		Retriable: false,
+		Retriable: true,
 	}
 
 	ErrUnableToGetSuggestGas = &types.Error{
 		Code:      28,
 		Message:   "unable to get suggest gas: ",
-		Retriable: false,
+		Retriable: true,
 	}
 
 	ErrorList = []*types.Error{

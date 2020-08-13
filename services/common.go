@@ -41,3 +41,18 @@ func SupportedOperationTypes() []string {
 	}
 	return opTyps
 }
+
+func SupportedConstructionTypes() []string {
+	return []string{
+		iotextypes.TransactionLogType_NATIVE_TRANSFER.String(),
+	}
+}
+
+func IsSupportedConstructionType(typ string) bool {
+	for _, styp := range SupportedConstructionTypes() {
+		if typ == styp {
+			return true
+		}
+	}
+	return false
+}
