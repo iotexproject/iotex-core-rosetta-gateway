@@ -162,7 +162,7 @@ var (
 	ErrExceededFee = &types.Error{
 		Code:      26,
 		Message:   "exceeded max fee",
-		Retriable: false,
+		Retriable: true,
 	}
 
 	ErrUnableToEstimateGas = &types.Error{

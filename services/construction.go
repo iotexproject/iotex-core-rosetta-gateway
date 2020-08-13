@@ -517,7 +517,6 @@ func (s *constructionAPIService) ConstructionSubmit(
 }
 
 func (s *constructionAPIService) opsToIoAction(ops []*types.Operation, meta map[string]interface{}) (*iotextypes.Action, error) {
-	gasPrice := cast.ToUint64(meta["gasPrice"])
 	// NOTE use payload to pass sender address, if user need to use payload,
 	// need to marshal payload with sender address and real payload
 	payload, err := marshalSenderAddrPayload(ops[0].Account.Address, nil)
@@ -534,7 +533,7 @@ func (s *constructionAPIService) opsToIoAction(ops []*types.Operation, meta map[
 				},
 			},
 			GasLimit: cast.ToUint64(meta["gasLimit"]),
-			GasPrice: new(big.Int).SetUint64(gasPrice).String(),
+			GasPrice: new(big.Int).SetUint64(cast.ToUint64(meta["gasPrice"])).String(),
 			Nonce:    cast.ToUint64(meta["nonce"]),
 		},
 	}, nil
