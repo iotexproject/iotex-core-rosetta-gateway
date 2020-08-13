@@ -143,7 +143,7 @@ func (c *grpcIoTexClient) GetAccount(ctx context.Context, height int64, owner st
 				Decimals: c.cfg.Currency.Decimals,
 				Metadata: nil,
 			}}},
-		Metadata: &map[string]interface{}{NonceKey: acc.GetPendingNonce()},
+		Metadata: map[string]interface{}{NonceKey: acc.GetPendingNonce()},
 	}
 	return
 }

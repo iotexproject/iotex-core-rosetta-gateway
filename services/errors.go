@@ -117,6 +117,36 @@ var (
 		Retriable: true,
 	}
 
+	ErrInvalidPublicKey = &types.Error{
+		Code:      19,
+		Message:   "unable to convert public key to address",
+		Retriable: false,
+	}
+
+	ErrUnsupportedPublicKeyType = &types.Error{
+		Code:      20,
+		Message:   "unsupported public key type",
+		Retriable: false,
+	}
+
+	ErrUnableToParseTx = &types.Error{
+		Code:      21,
+		Message:   "unable to parse transaction",
+		Retriable: false,
+	}
+
+	ErrInvalidGasPrice = &types.Error{
+		Code:      22,
+		Message:   "invalid gas price",
+		Retriable: false,
+	}
+
+	ErrUnmarshal = &types.Error{
+		Code:      23,
+		Message:   "proto arshal error",
+		Retriable: false,
+	}
+
 	ErrorList = []*types.Error{
 		ErrUnableToGetChainID,
 		ErrInvalidBlockchain,
@@ -136,5 +166,6 @@ var (
 		ErrUnableToGetNextNonce,
 		ErrMalformedValue,
 		ErrUnableToGetNodeStatus,
+		ErrInvalidPublicKey,
 	}
 )
