@@ -31,6 +31,16 @@
   },
   {
     "account_identifier": {
+      "address":"io19sj34t67smv0l3u3wq8qgvltzva730zsd27n56"
+    },
+    "currency":{
+      "symbol":"IOTX",
+      "decimals":18
+    },
+    "value": "800000000000000000000000000"
+  },
+  {
+    "account_identifier": {
       "address":"io1zydewu5993fxx8mu0km65609ss36ckgwpp25p3"
     },
     "currency":{

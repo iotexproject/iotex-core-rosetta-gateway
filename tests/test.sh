@@ -3,7 +3,6 @@ set -o nounset -o pipefail -o errexit
 
 # Kill all dangling processes on exit.
 cleanup() {
-  cat rosetta-cli.log
   printf "${OFF}"
   pkill -P $$ || true
 }
@@ -15,52 +14,77 @@ OFF=$'\e[0m'
 
 ROSETTA_PATH=$(pwd)
 
-cd tests
-printf "${GRN}### Starting the iotex server...${OFF}\n"
-GW="iotex-server -config-path=config_testnet.yaml -genesis-path=genesis_testnet.yaml -plugin=gateway"
-${GW} &
-sleep 3
+function constructionCheckTest() {
+  cd $rosetta_path/rosetta-cli-config
+  printf "${GRN}### Run rosetta-cli check:construction${OFF}\n"
+  rosetta-cli check:construction --configuration-file testing/iotex-testing.json >rosetta-cli.log 2>&1 &
+  constructionCheckPID=$!
+  sleep 1
 
-printf "${GRN}### Starting the Rosetta gateway...${OFF}\n"
-GW="iotex-core-rosetta-gateway"
-${GW} &
-sleep 3
+  ## TODO change this to sub process, sleep 1s, may not be right
+  SEND_TO=$(grep -o "Waiting for funds on \w\+" rosetta-cli.log | rev | cut -d' ' -f 1 | rev)
+  cd $ROSETTA_PATH/tests/inject
+  printf "${GRN}### Starting transfer, send to: ${SEND_TO}${OFF}\n"
+  ROSETTA_SEND_TO=$SEND_TO go test -test.run TestInjectTransfer10IOTX
+  printf "${GRN}### Finished transfer funds${OFF}\n"
 
-cd $ROSETTA_PATH/rosetta-cli-config
-printf "${GRN}### Run rosetta-cli check:construction${OFF}\n"
-rosetta-cli check:construction --configuration-file testing/iotex-testing.json >rosetta-cli.log 2>&1 &
-sleep 1
-
-SEND_TO=$(grep -o "Waiting for funds on \w\+" rosetta-cli.log | rev | cut -d' ' -f 1 | rev)
-cd $ROSETTA_PATH/tests/inject
-printf "${GRN}### Starting transfer, send to: ${SEND_TO}${OFF}\n"
-ROSETTA_SEND_TO=$SEND_TO go test -test.run TestInjectTransfer10IOTX
-printf "${GRN}### Finished transfer${OFF}\n"
-sleep 30
-
-cd $ROSETTA_PATH/rosetta-cli-config
-COUNT=$(grep -c "Transactions Confirmed: 1" rosetta-cli.log)
-printf "${GRN}### Finished check transfer, count: ${COUNT}${OFF}\n"
-if [ $COUNT -lt 1 ]; then
-  printf "${GRN}rosetta-cli check:construction test failed${OFF}\n"
-  exit 1
-else
+  sleep 30
+  cd $ROSETTA_PATH/rosetta-cli-config
+  ## TODO change this grep to a sub process, fail this grep in x sec should fail the test
+  COUNT=$(grep -c "Transactions Confirmed: 1" rosetta-cli.log)
+  printf "${GRN}### Finished check transfer, count: ${COUNT}${OFF}\n"
   printf "${GRN}### Run rosetta-cli check:construction succeeded${OFF}\n"
-fi
+}
 
-cd $ROSETTA_PATH/rosetta-cli-config
-printf "${GRN}### Run rosetta-cli check:data${OFF}\n"
-rosetta-cli check:data --configuration-file testing/iotex-testing.json &
+function dataCheckTest() {
+  cd $ROSETTA_PATH/rosetta-cli-config
+  printf "${GRN}### Run rosetta-cli check:data${OFF}\n"
+  rosetta-cli check:data --configuration-file testing/iotex-testing.json &
+  dataCheckPID=$!
 
-cd ../tests/inject
-printf "${GRN}### Inject some actions...${OFF}\n"
-go test
+  cd $ROSETTA_PATH/tests/inject
+  printf "${GRN}### Inject some actions...${OFF}\n"
+  go test
 
-sleep 10 #wait for the last candidate action
+  sleep 10 #wait for the last candidate action
+  ps -p $dataCheckPID >/dev/null
+  printf "${GRN}### Run rosetta-cli check:data succeeded${OFF}\n"
+}
 
-cd ../../rosetta-cli-config
-printf "${GRN}### Run rosetta-cli view:account and view:block...${OFF}\n"
-rosetta-cli view:account '{"address":"io1ph0u2psnd7muq5xv9623rmxdsxc4uapxhzpg02"}' --configuration-file testing/iotex-testing.json
-rosetta-cli view:block 10 --configuration-file testing/iotex-testing.json
+function viewTest(){
+  cd $ROSETTA_PATH/rosetta-cli-config
+  printf "${GRN}### Run rosetta-cli view:account and view:block...${OFF}\n"
+  rosetta-cli view:account '{"address":"io1ph0u2psnd7muq5xv9623rmxdsxc4uapxhzpg02"}' --configuration-file testing/iotex-testing.json
+  rosetta-cli view:block 10 --configuration-file testing/iotex-testing.json
+  printf "${GRN}### Run rosetta-cli view succeeded${OFF}\n"
+}
+
+function startServer(){
+  cd $ROSETTA_PATH
+  printf "${GRN}### Starting the iotex server...${OFF}\n"
+  GW="iotex-server -config-path=./tests/config_test.yaml -genesis-path=./tests/genesis_test.yaml -plugin=gateway"
+  ${GW} &
+  sleep 3
+
+  printf "${GRN}### Starting the Rosetta gateway...${OFF}\n"
+  GW="iotex-core-rosetta-gateway"
+  ${GW} &
+  sleep 3
+}
+
+
+printf "${GRN}### Start testing${OFF}\n"
+startServer
+
+( constructionCheckTest ) &
+constructionCheckTestPID=$!
+
+dataCheckTest
+
+viewTest
+
+wait $constructionCheckTestPID
+ps -p $dataCheckPID >/dev/null
+ps -p $constructionCheckPID >/dev/null
 
 printf "${GRN}### Tests finished.${OFF}\n"
