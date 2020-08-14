@@ -245,6 +245,20 @@ func (c *grpcIoTexClient) connect() (err error) {
 	return err
 }
 
+func genBlock(parentBlk, blk *iotextypes.BlockMeta) *types.Block {
+	return &types.Block{
+		BlockIdentifier: &types.BlockIdentifier{
+			Index: int64(blk.Height),
+			Hash:  blk.Hash,
+		},
+		ParentBlockIdentifier: &types.BlockIdentifier{
+			Index: int64(parentBlk.Height),
+			Hash:  parentBlk.Hash,
+		},
+		Timestamp: blk.Timestamp.Seconds * 1e3, // ms,
+	}
+}
+
 func (c *grpcIoTexClient) getBlock(ctx context.Context, height int64) (ret *types.Block, err error) {
 	parentHeight := uint64(height) - 1
 	count := uint64(2)
@@ -272,17 +286,7 @@ func (c *grpcIoTexClient) getBlock(ctx context.Context, height int64) (ret *type
 	if len(resp.BlkMetas) == 2 {
 		blk = resp.BlkMetas[1]
 	}
-	ret = &types.Block{
-		BlockIdentifier: &types.BlockIdentifier{
-			Index: int64(blk.Height),
-			Hash:  blk.Hash,
-		},
-		ParentBlockIdentifier: &types.BlockIdentifier{
-			Index: int64(parentHeight),
-			Hash:  parentBlk.Hash,
-		},
-		Timestamp: blk.Timestamp.Seconds * 1e3, // ms,
-	}
+	ret = genBlock(parentBlk, blk)
 	return
 }
 
