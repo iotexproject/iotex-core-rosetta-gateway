@@ -401,4 +401,4 @@ Response
 cd rosetta-cli-config
 rosetta-cli check:construction --configuration-file testnet/iotex.json`
 ```
-4. Request funds from [IoTeX Faucet](https://faucet.iotex.io/)
+4. Request funds from [IoTeX Faucet](https://faucet.iotex.io/) (Note: every Google account can request only once)
