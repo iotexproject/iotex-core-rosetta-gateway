@@ -12,12 +12,14 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/iotexproject/iotex-core/pkg/unit"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 
@@ -323,6 +325,29 @@ func injectTransfer(t *testing.T) {
 	to, err := address.FromString(to)
 	require.NoError(err)
 	hash, err := c.Transfer(to, big.NewInt(0).SetUint64(1000)).SetGasPrice(gasPrice).SetGasLimit(gasLimit).Call(context.Background())
+	require.NoError(err)
+	require.NotNil(hash)
+	checkHash(hex.EncodeToString(hash[:]), t)
+}
+
+// ROSETTA_SEND_TO=$SEND_TO go test -test.run TestInjectTransfer10IOTX
+func TestInjectTransfer10IOTX(t *testing.T) {
+	_to := os.Getenv("ROSETTA_SEND_TO")
+	t.Logf("Recipient: %s", _to)
+	if _to == "" {
+		t.Skip()
+	}
+	require := require.New(t)
+	conn, err := grpc.Dial(endpoint, grpc.WithInsecure())
+	require.NoError(err)
+	defer conn.Close()
+
+	acc, err := account.HexStringToAccount(privateKey)
+	require.NoError(err)
+	c := iotex.NewAuthedClient(iotexapi.NewAPIServiceClient(conn), acc)
+	to, err := address.FromString(_to)
+	require.NoError(err)
+	hash, err := c.Transfer(to, unit.ConvertIotxToRau(10)).SetGasPrice(gasPrice).SetGasLimit(gasLimit).Call(context.Background())
 	require.NoError(err)
 	require.NotNil(hash)
 	checkHash(hex.EncodeToString(hash[:]), t)
