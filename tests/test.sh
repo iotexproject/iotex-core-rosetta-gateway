@@ -3,7 +3,7 @@ set -o nounset -o pipefail -o errexit
 
 # Kill all dangling processes on exit.
 cleanup() {
-  # cat rosetta-cli.log
+  cat rosetta-cli.log
   printf "${OFF}"
   pkill -P $$ || true
 }
@@ -30,15 +30,17 @@ cd $ROSETTA_PATH/rosetta-cli-config
 printf "${GRN}### Run rosetta-cli check:construction${OFF}\n"
 rosetta-cli check:construction --configuration-file testing/iotex-testing.json >rosetta-cli.log 2>&1 &
 sleep 1
+
 SEND_TO=$(grep -o "Waiting for funds on \w\+" rosetta-cli.log | rev | cut -d' ' -f 1 | rev)
 cd $ROSETTA_PATH/tests/inject
 printf "${GRN}### Starting transfer, send to: ${SEND_TO}${OFF}\n"
 ROSETTA_SEND_TO=$SEND_TO go test -test.run TestInjectTransfer10IOTX
 printf "${GRN}### Finished transfer${OFF}\n"
-# check transfer result
+sleep 30
+
 cd $ROSETTA_PATH/rosetta-cli-config
-COUNT=$(grep -c "\[STATS\] Transactions Confirmed: 1 (Created: 1, In Progress: 0, Stale: 0, Failed: 0) Addresses Created: 2" rosetta-cli.log)
-printf "${GRN}### count: ${COUNT}${OFF}\n"
+COUNT=$(grep -c "Transactions Confirmed: 1" rosetta-cli.log)
+printf "${GRN}### Finished check transfer, count: ${COUNT}${OFF}\n"
 if [ $COUNT -lt 1 ]; then
   printf "${GRN}rosetta-cli check:construction test failed${OFF}\n"
   exit 1
