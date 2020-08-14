@@ -15,7 +15,7 @@ OFF=$'\e[0m'
 ROSETTA_PATH=$(pwd)
 
 function constructionCheckTest() {
-  cd $rosetta_path/rosetta-cli-config
+  cd $ROSETTA_PATH/rosetta-cli-config
   printf "${GRN}### Run rosetta-cli check:construction${OFF}\n"
   rosetta-cli check:construction --configuration-file testing/iotex-testing.json >rosetta-cli.log 2>&1 &
   constructionCheckPID=$!
@@ -33,6 +33,7 @@ function constructionCheckTest() {
   ## TODO change this grep to a sub process, fail this grep in x sec should fail the test
   COUNT=$(grep -c "Transactions Confirmed: 1" rosetta-cli.log)
   printf "${GRN}### Finished check transfer, count: ${COUNT}${OFF}\n"
+  ps -p $constructionCheckPID >/dev/null
   printf "${GRN}### Run rosetta-cli check:construction succeeded${OFF}\n"
 }
 
@@ -76,7 +77,7 @@ function startServer(){
 printf "${GRN}### Start testing${OFF}\n"
 startServer
 
-( constructionCheckTest ) &
+constructionCheckTest &
 constructionCheckTestPID=$!
 
 dataCheckTest
@@ -84,7 +85,5 @@ dataCheckTest
 viewTest
 
 wait $constructionCheckTestPID
-ps -p $dataCheckPID >/dev/null
-ps -p $constructionCheckPID >/dev/null
 
 printf "${GRN}### Tests finished.${OFF}\n"
