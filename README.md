@@ -7,7 +7,7 @@ This repository implements the [Rosetta](https://github.com/coinbase/rosetta-sdk
 |iotex-core-rosetta-gateway| iotex-core | rosetta-specifications | rosetta-cli |
 |---------|----------|-------------|-------------|
 |master| v1.1.0|v1.4.2|v0.4.1|
-|v1.0.x| v1.1.0|v1.3.1|v0.4.1|
+|v1.1.x| v1.1.0|v1.4.2|v0.4.1|
 
 ## Run IoTeX mainnet node and Rosetta Gateway in a Docker
 
