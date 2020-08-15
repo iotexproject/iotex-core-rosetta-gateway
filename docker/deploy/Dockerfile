@@ -13,7 +13,7 @@ ARG POLL_META_URI="https://storage.googleapis.com/blockchain-golden/poll.mainnet
 RUN mkdir -p /etc/iotex/meta && \
     curl -L $POLL_META_URI > /etc/iotex/meta/poll.tar.gz
 
-ARG GATEWAY_VERSION="v1.1.0"
+ARG GATEWAY_VERSION="v1.1.1"
 RUN git clone --single-branch --branch $GATEWAY_VERSION https://github.com/iotexproject/iotex-core-rosetta-gateway /usr/local/build-gateway && \
     cd /usr/local/build-gateway && \
     make clean build && \
