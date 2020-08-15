@@ -82,12 +82,7 @@ type (
 
 // NewIoTexClient returns an implementation of IoTexClient
 func NewIoTexClient(cfg *config.Config) (cli IoTexClient, err error) {
-	gcli := &grpcIoTexClient{cfg: cfg}
-	if err = gcli.connect(); err != nil {
-		return
-	}
-	cli = gcli
-	return
+	return &grpcIoTexClient{cfg: cfg}, nil
 }
 
 func (c *grpcIoTexClient) GetChainID(ctx context.Context) (string, error) {
