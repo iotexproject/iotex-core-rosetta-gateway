@@ -27,12 +27,10 @@ import (
 	"github.com/iotexproject/iotex-core-rosetta-gateway/config"
 )
 
-const (
-	serverAddr = ":14014"
-)
+func testServerAddr() string { return "127.0.0.1:14014" }
 
-var (
-	testCfg = &config.Config{
+func testConfig() *config.Config {
+	return &config.Config{
 		NetworkIdentifier: config.NetworkIdentifier{
 			Blockchain: "IoTeX",
 			Network:    "testnet",
@@ -43,17 +41,17 @@ var (
 		},
 		Server: config.Server{
 			Port:           "8080",
-			Endpoint:       "localhost" + serverAddr,
+			Endpoint:       testServerAddr(),
 			SecureEndpoint: false,
 			RosettaVersion: "1.3.5",
 		},
 		KeepNoneTxAction: false,
 	}
-	cli IoTexClient
+}
 
-	now = time.Now()
-
-	chain = []*iotextypes.BlockMeta{
+func testChain() []*iotextypes.BlockMeta {
+	now := time.Now()
+	return []*iotextypes.BlockMeta{
 		{
 			Hash:      "genesis hash",
 			Height:    1,
@@ -72,28 +70,42 @@ var (
 			Timestamp: &timestamp.Timestamp{Seconds: now.Unix()},
 		},
 	}
-	chainMeta = &iotextypes.ChainMeta{
+}
+
+func testChainMeta(chain []*iotextypes.BlockMeta) *iotextypes.ChainMeta {
+	return &iotextypes.ChainMeta{
 		Height: uint64(len(chain)),
 	}
-	accountMeta = &iotextypes.AccountMeta{
+}
+
+func testAccountMeta() *iotextypes.AccountMeta {
+	return &iotextypes.AccountMeta{
 		Address:      "address",
 		Balance:      unit.ConvertIotxToRau(1000).String(),
 		Nonce:        rand.Uint64(),
 		PendingNonce: rand.Uint64(),
 		NumActions:   rand.Uint64(),
 	}
-	blockIdentifier = &iotextypes.BlockIdentifier{
+}
+
+func testBlockIdentifier(chain []*iotextypes.BlockMeta) *iotextypes.BlockIdentifier {
+	return &iotextypes.BlockIdentifier{
 		Hash:   "block identifier hash",
 		Height: uint64(rand.Intn(len(chain))),
 	}
-	serverMeta = &iotextypes.ServerMeta{
+}
+
+func testServerMeta() *iotextypes.ServerMeta {
+	return &iotextypes.ServerMeta{
 		PackageVersion:  "1.1.0",
 		PackageCommitID: "commit id",
 		GitStatus:       "ok",
 		GoVersion:       "1.14.6",
-		BuildTime:       now.String(),
+		BuildTime:       time.Now().String(),
 	}
-	transactionLogs = &iotextypes.TransactionLogs{
+}
+func testTransactionLogs() *iotextypes.TransactionLogs {
+	return &iotextypes.TransactionLogs{
 		Logs: []*iotextypes.TransactionLog{
 			{
 				ActionHash:      []byte("f8cdb02b5f0d219d4aeebc47317a5639f74acac66bca44806040a841838bf2d9"),
@@ -128,21 +140,28 @@ var (
 			},
 		},
 	}
-)
+}
 
-func newMockServer(t *testing.T) (stop func()) {
+func newMockServer(t *testing.T) (svr iotexapi.APIServiceServer, cli IoTexClient, stop func()) {
 	require := require.New(t)
 	service := mock_iotexapi.NewMockAPIServiceServer(gomock.NewController(t))
 	server := grpc.NewServer()
 	iotexapi.RegisterAPIServiceServer(server, service)
-	listener, err := net.Listen("tcp", serverAddr)
+	listener, err := net.Listen("tcp", testServerAddr())
 	require.NoError(err)
 	go func() {
 		err := server.Serve(listener)
 		require.NoError(err)
 	}()
-	cli, err = NewIoTexClient(testCfg)
+	cli, err = NewIoTexClient(testConfig())
 	require.NoError(err)
+
+	chain := testChain()
+	chainMeta := testChainMeta(chain)
+	accountMeta := testAccountMeta()
+	blockIdentifier := testBlockIdentifier(chain)
+	serverMeta := testServerMeta()
+	transactionLogs := testTransactionLogs()
 
 	service.EXPECT().
 		GetBlockMetas(gomock.Any(), gomock.AssignableToTypeOf(&iotexapi.GetBlockMetasRequest{})).
@@ -226,28 +245,41 @@ func newMockServer(t *testing.T) (stop func()) {
 			BlockIdentifier: blockIdentifier,
 		}, nil).
 		AnyTimes()
-	return func() { server.Stop() }
+	return service, cli, func() { server.Stop() }
 }
 
 func TestGrpcIoTexClient_GetChainID(t *testing.T) {
 	require := require.New(t)
-	stop := newMockServer(t)
+	_, cli, stop := newMockServer(t)
 	defer stop()
 	block, err := cli.GetChainID(context.Background())
 	require.NoError(err)
-	require.Equal(testCfg.NetworkIdentifier.Network, block)
+	require.Equal(testConfig().NetworkIdentifier.Network, block)
 }
 
 func TestIoTexClient_GetBlock(t *testing.T) {
 	var (
 		require   = require.New(t)
 		height    = int64(2)
+		chain     = testChain()
 		blk       = chain[height-1]
 		preBlk    = chain[height-2]
 		expectBlk = genBlock(preBlk, blk)
 	)
-	stop := newMockServer(t)
+	svr, cli, stop := newMockServer(t)
 	defer stop()
+	blockMetas, err := svr.GetBlockMetas(context.Background(), &iotexapi.GetBlockMetasRequest{
+		Lookup: &iotexapi.GetBlockMetasRequest_ByIndex{
+			ByIndex: &iotexapi.GetBlockMetasByIndexRequest{
+				Start: uint64(height) - 1,
+				Count: 2,
+			},
+		},
+	})
+	require.NoError(err)
+	if len(blockMetas.BlkMetas) != 2 {
+		require.Error(errors.New("unexpect blocks meta"))
+	}
 	block, err := cli.GetBlock(context.Background(), height)
 	require.NoError(err)
 	require.Equal(expectBlk, block)
@@ -256,11 +288,12 @@ func TestIoTexClient_GetBlock(t *testing.T) {
 func TestGrpcIoTexClient_GetLatestBlock(t *testing.T) {
 	var (
 		require    = require.New(t)
+		chain      = testChain()
 		lastBlk    = chain[len(chain)-1]
 		preLastBlk = chain[len(chain)-2]
 		expectBlk  = genBlock(preLastBlk, lastBlk)
 	)
-	stop := newMockServer(t)
+	_, cli, stop := newMockServer(t)
 	defer stop()
 	block, err := cli.GetLatestBlock(context.Background())
 	require.NoError(err)
@@ -270,10 +303,11 @@ func TestGrpcIoTexClient_GetLatestBlock(t *testing.T) {
 func TestGrpcIoTexClient_GetGenesisBlock(t *testing.T) {
 	var (
 		require   = require.New(t)
+		chain     = testChain()
 		genesis   = chain[0]
 		expectBlk = genBlock(genesis, genesis)
 	)
-	stop := newMockServer(t)
+	_, cli, stop := newMockServer(t)
 	defer stop()
 	block, err := cli.GetGenesisBlock(context.Background())
 	require.NoError(err)
@@ -282,7 +316,7 @@ func TestGrpcIoTexClient_GetGenesisBlock(t *testing.T) {
 
 func TestGrpcIoTexClient_GetAccount(t *testing.T) {
 	require := require.New(t)
-	stop := newMockServer(t)
+	_, cli, stop := newMockServer(t)
 	defer stop()
 	_, err := cli.GetAccount(context.Background(), 0, "")
 	require.NoError(err)
@@ -290,7 +324,7 @@ func TestGrpcIoTexClient_GetAccount(t *testing.T) {
 
 func TestGrpcIoTexClient_SubmitTx(t *testing.T) {
 	require := require.New(t)
-	stop := newMockServer(t)
+	_, cli, stop := newMockServer(t)
 	defer stop()
 	tx, err := cli.SubmitTx(context.Background(), &iotextypes.Action{})
 	require.NoError(err)
@@ -299,9 +333,10 @@ func TestGrpcIoTexClient_SubmitTx(t *testing.T) {
 
 func TestGrpcIoTexClient_GetStatus(t *testing.T) {
 	require := require.New(t)
-	stop := newMockServer(t)
+	svr, cli, stop := newMockServer(t)
 	defer stop()
-	expect := &iotexapi.GetChainMetaResponse{ChainMeta: chainMeta}
+	expect, err := svr.GetChainMeta(context.Background(), &iotexapi.GetChainMetaRequest{})
+	require.NoError(err)
 	status, err := cli.GetStatus(context.Background())
 	require.NoError(err)
 	// require.Equal(chainMeta, status.GetChainMeta())
@@ -314,8 +349,11 @@ func TestGrpcIoTexClient_GetStatus(t *testing.T) {
 
 func TestGrpcIoTexClient_GetVersion(t *testing.T) {
 	require := require.New(t)
-	stop := newMockServer(t)
+	svr, cli, stop := newMockServer(t)
 	defer stop()
+	resp, err := svr.GetServerMeta(context.Background(), &iotexapi.GetServerMetaRequest{})
+	serverMeta := resp.GetServerMeta()
+	require.NoError(err)
 	version, err := cli.GetVersion(context.Background())
 	require.NoError(err)
 	// require.Equal(serverMeta, version.GetServerMeta())
@@ -328,7 +366,7 @@ func TestGrpcIoTexClient_GetVersion(t *testing.T) {
 
 func TestGrpcIoTexClient_GetTransactions(t *testing.T) {
 	require := require.New(t)
-	stop := newMockServer(t)
+	_, cli, stop := newMockServer(t)
 	defer stop()
 	// TODO: fill transactions data into mock server, and check it.
 	transactions, err := cli.GetTransactions(context.Background(), 2)
@@ -337,6 +375,8 @@ func TestGrpcIoTexClient_GetTransactions(t *testing.T) {
 }
 
 func TestGrpcIoTexClient_GetConfig(t *testing.T) {
+	_, cli, stop := newMockServer(t)
+	defer stop()
 	config := cli.GetConfig()
-	require.Equal(t, testCfg, config)
+	require.Equal(t, testConfig(), config)
 }
