@@ -393,7 +393,7 @@ Response
 }
 ```
 
-## <a name="testnet"/>Test Constructions on IoTex Testnet 
+## <a name="testnet"/>Test Constructions on IoTeX Testnet 
 1. (Optional) Run iotex-core-rosetta-gateway locally 
 2. Set `online_url` (and `offline_url` if skipped step 1) to be `https://rosetta.testnet.iotex.one` in [`rosetta-cli-config/testnet/iotex.json`](https://github.com/iotexproject/iotex-core-rosetta-gateway/blob/master/rosetta-cli-config/testnet/iotex.json)
 3. Run
