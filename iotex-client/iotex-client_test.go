@@ -142,7 +142,6 @@ func testTransactionLogs() *iotextypes.TransactionLogs {
 	}
 }
 
-func newMockServer(t *testing.T) (svr iotexapi.APIServiceServer, cli IoTexClient, stop func()) {
 func newMockServer(t *testing.T) (svr iotexapi.APIServiceServer, cli IoTexClient) {
 	require := require.New(t)
 	service := mock_iotexapi.NewMockAPIServiceServer(gomock.NewController(t))
@@ -152,7 +151,6 @@ func newMockServer(t *testing.T) (svr iotexapi.APIServiceServer, cli IoTexClient
 	require.NoError(err)
 	go func() {
 		err := server.Serve(listener)
-		require.NoError(err)
 		if err != nil && err != grpc.ErrServerStopped {
 			panic(err)
 		}
