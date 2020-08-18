@@ -143,6 +143,7 @@ func testTransactionLogs() *iotextypes.TransactionLogs {
 }
 
 func newMockServer(t *testing.T) (svr iotexapi.APIServiceServer, cli IoTexClient, stop func()) {
+func newMockServer(t *testing.T) (svr iotexapi.APIServiceServer, cli IoTexClient) {
 	require := require.New(t)
 	service := mock_iotexapi.NewMockAPIServiceServer(gomock.NewController(t))
 	server := grpc.NewServer()
@@ -152,6 +153,9 @@ func newMockServer(t *testing.T) (svr iotexapi.APIServiceServer, cli IoTexClient
 	go func() {
 		err := server.Serve(listener)
 		require.NoError(err)
+		if err != nil && err != grpc.ErrServerStopped {
+			panic(err)
+		}
 	}()
 	cli, err = NewIoTexClient(testConfig())
 	require.NoError(err)
@@ -245,13 +249,13 @@ func newMockServer(t *testing.T) (svr iotexapi.APIServiceServer, cli IoTexClient
 			BlockIdentifier: blockIdentifier,
 		}, nil).
 		AnyTimes()
-	return service, cli, func() { server.Stop() }
+	t.Cleanup(server.Stop)
+	return service, cli
 }
 
 func TestGrpcIoTexClient_GetChainID(t *testing.T) {
 	require := require.New(t)
-	_, cli, stop := newMockServer(t)
-	defer stop()
+	_, cli := newMockServer(t)
 	block, err := cli.GetChainID(context.Background())
 	require.NoError(err)
 	require.Equal(testConfig().NetworkIdentifier.Network, block)
@@ -266,8 +270,7 @@ func TestIoTexClient_GetBlock(t *testing.T) {
 		preBlk    = chain[height-2]
 		expectBlk = genBlock(preBlk, blk)
 	)
-	svr, cli, stop := newMockServer(t)
-	defer stop()
+	svr, cli := newMockServer(t)
 	blockMetas, err := svr.GetBlockMetas(context.Background(), &iotexapi.GetBlockMetasRequest{
 		Lookup: &iotexapi.GetBlockMetasRequest_ByIndex{
 			ByIndex: &iotexapi.GetBlockMetasByIndexRequest{
@@ -293,8 +296,7 @@ func TestGrpcIoTexClient_GetLatestBlock(t *testing.T) {
 		preLastBlk = chain[len(chain)-2]
 		expectBlk  = genBlock(preLastBlk, lastBlk)
 	)
-	_, cli, stop := newMockServer(t)
-	defer stop()
+	_, cli := newMockServer(t)
 	block, err := cli.GetLatestBlock(context.Background())
 	require.NoError(err)
 	require.Equal(expectBlk, block)
@@ -307,8 +309,7 @@ func TestGrpcIoTexClient_GetGenesisBlock(t *testing.T) {
 		genesis   = chain[0]
 		expectBlk = genBlock(genesis, genesis)
 	)
-	_, cli, stop := newMockServer(t)
-	defer stop()
+	_, cli := newMockServer(t)
 	block, err := cli.GetGenesisBlock(context.Background())
 	require.NoError(err)
 	require.Equal(expectBlk, block)
@@ -316,16 +317,14 @@ func TestGrpcIoTexClient_GetGenesisBlock(t *testing.T) {
 
 func TestGrpcIoTexClient_GetAccount(t *testing.T) {
 	require := require.New(t)
-	_, cli, stop := newMockServer(t)
-	defer stop()
+	_, cli := newMockServer(t)
 	_, err := cli.GetAccount(context.Background(), 0, "")
 	require.NoError(err)
 }
 
 func TestGrpcIoTexClient_SubmitTx(t *testing.T) {
 	require := require.New(t)
-	_, cli, stop := newMockServer(t)
-	defer stop()
+	_, cli := newMockServer(t)
 	tx, err := cli.SubmitTx(context.Background(), &iotextypes.Action{})
 	require.NoError(err)
 	require.Equal(hex.EncodeToString(hash.ZeroHash256[:]), tx)
@@ -333,8 +332,7 @@ func TestGrpcIoTexClient_SubmitTx(t *testing.T) {
 
 func TestGrpcIoTexClient_GetStatus(t *testing.T) {
 	require := require.New(t)
-	svr, cli, stop := newMockServer(t)
-	defer stop()
+	svr, cli := newMockServer(t)
 	expect, err := svr.GetChainMeta(context.Background(), &iotexapi.GetChainMetaRequest{})
 	require.NoError(err)
 	status, err := cli.GetStatus(context.Background())
@@ -349,8 +347,7 @@ func TestGrpcIoTexClient_GetStatus(t *testing.T) {
 
 func TestGrpcIoTexClient_GetVersion(t *testing.T) {
 	require := require.New(t)
-	svr, cli, stop := newMockServer(t)
-	defer stop()
+	svr, cli := newMockServer(t)
 	resp, err := svr.GetServerMeta(context.Background(), &iotexapi.GetServerMetaRequest{})
 	serverMeta := resp.GetServerMeta()
 	require.NoError(err)
@@ -366,8 +363,7 @@ func TestGrpcIoTexClient_GetVersion(t *testing.T) {
 
 func TestGrpcIoTexClient_GetTransactions(t *testing.T) {
 	require := require.New(t)
-	_, cli, stop := newMockServer(t)
-	defer stop()
+	_, cli := newMockServer(t)
 	// TODO: fill transactions data into mock server, and check it.
 	transactions, err := cli.GetTransactions(context.Background(), 2)
 	require.NoError(err)
@@ -375,8 +371,7 @@ func TestGrpcIoTexClient_GetTransactions(t *testing.T) {
 }
 
 func TestGrpcIoTexClient_GetConfig(t *testing.T) {
-	_, cli, stop := newMockServer(t)
-	defer stop()
+	_, cli := newMockServer(t)
 	config := cli.GetConfig()
 	require.Equal(t, testConfig(), config)
 }
