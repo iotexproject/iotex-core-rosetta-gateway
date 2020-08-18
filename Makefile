@@ -41,3 +41,7 @@ clean:
 	@find . -name $(COV_OUT) -delete
 	@find . -name $(TESTBED_COV_OUT) -delete
 	@$(GOCLEAN) -i $(PKGS)
+
+.PHONY: mockgen
+mockgen:
+	@./misc/scripts/mockgen.sh

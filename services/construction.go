@@ -78,13 +78,13 @@ func (s *constructionAPIService) ConstructionCombine(
 		}
 		rawPub = pubk.SerializeUncompressed()
 	}
-	//NOTE set right sender pubkey here
+	// NOTE set right sender pubkey here
 	act.SenderPubKey = rawPub
 
 	rawSig := request.Signatures[0].Bytes
 	if len(rawSig) != 65 {
 		terr := ErrInvalidInputParam
-		terr.Message += "invalid signature length: " + err.Error()
+		terr.Message += "invalid signature length"
 		return nil, terr
 	}
 	act.Signature = rawSig
