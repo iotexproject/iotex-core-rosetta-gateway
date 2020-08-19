@@ -12,6 +12,9 @@ import (
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
+
 	"github.com/iotexproject/go-pkgs/hash"
 	"github.com/iotexproject/iotex-core/action"
 	"github.com/iotexproject/iotex-core/blockchain/block"
@@ -21,8 +24,6 @@ import (
 	"github.com/iotexproject/iotex-proto/golang/iotexapi"
 	"github.com/iotexproject/iotex-proto/golang/iotexapi/mock_iotexapi"
 	"github.com/iotexproject/iotex-proto/golang/iotextypes"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
 
 	"github.com/iotexproject/iotex-core-rosetta-gateway/config"
 )

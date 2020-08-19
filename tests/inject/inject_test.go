@@ -19,16 +19,13 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/iotexproject/iotex-core/pkg/unit"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 
-	"github.com/iotexproject/go-pkgs/crypto"
 	"github.com/iotexproject/go-pkgs/hash"
 	"github.com/iotexproject/iotex-address/address"
 	"github.com/iotexproject/iotex-antenna-go/v2/account"
 	"github.com/iotexproject/iotex-antenna-go/v2/iotex"
-	"github.com/iotexproject/iotex-core/action"
 	"github.com/iotexproject/iotex-proto/golang/iotexapi"
 )
 
@@ -38,7 +35,6 @@ const (
 	sender2                 = "io1mflp9m6hcgm2qcghchsdqj3z3eccrnekx9p0ms"
 	privateKey2             = "cfa6ef757dee2e50351620dca002d32b9c090cfda55fb81f37f1d26b273743f1"
 	privateKey3             = "d204973e2257873e1988ebf352f58b482f25dd0d51160de899b23dc1475fe377"
-	onlyForExecution        = "io1zydewu5993fxx8mu0km65609ss36ckgwpp25p3"
 	onlyForExecutionPrivate = "cc816a12c3fee40cadab02c1bce4ff4fe5abf754a9683e597838c72b967e67bb"
 	to                      = "io1vdtfpzkwpyngzvx7u2mauepnzja7kd5rryp0sg"
 	receipt                 = "io1mflp9m6hcgm2qcghchsdqj3z3eccrnekx9p0ms"
@@ -46,8 +42,9 @@ const (
 )
 
 var (
-	gasPrice = big.NewInt(0).SetUint64(1e12)
-	gasLimit = uint64(10000000)
+	gasPrice  = big.NewInt(0).SetUint64(1e12)
+	gasLimit  = uint64(10000000)
+	amount, _ = big.NewInt(0).SetString("1200100000000000000000000", 10)
 )
 
 func TestInjectTransfer(t *testing.T) {
@@ -77,24 +74,13 @@ func TestCandidateRegister(t *testing.T) {
 		Address: sender2})
 	require.NoError(err)
 	fmt.Println("nonce:", getacc.AccountMeta.PendingNonce)
-	cr, err := action.NewCandidateRegister(getacc.AccountMeta.PendingNonce, "xxxx", sender2, sender2, sender2,
-		"12001000000000000000000000",
-		7, false, nil, gasLimit, gasPrice)
+	addr, err := address.FromString(sender2)
 	require.NoError(err)
-	sk, err := crypto.HexStringToPrivateKey(privateKey2)
-	bd := &action.EnvelopeBuilder{}
-	elp := bd.SetNonce(getacc.AccountMeta.PendingNonce).
-		SetGasPrice(gasPrice).
-		SetGasLimit(gasLimit).
-		SetAction(cr).Build()
-	selp, err := action.Sign(elp, sk)
+	h, err := c.Candidate().Register("xxxx", addr, addr, addr, amount,
+		7, false, nil).SetGasLimit(gasLimit).SetGasPrice(gasPrice).SetNonce(getacc.AccountMeta.PendingNonce).Call(context.Background())
+	fmt.Println("nonce:", getacc.AccountMeta.PendingNonce)
 	require.NoError(err)
-	request := &iotexapi.SendActionRequest{Action: selp.Proto()}
-
-	resp, err := c.API().SendAction(context.Background(), request)
-	require.NoError(err)
-	require.NotEmpty(resp.GetActionHash())
-	checkHash(resp.GetActionHash(), t)
+	checkHash(hex.EncodeToString(h[:]), t)
 }
 
 func TestStakeCreate(t *testing.T) {
@@ -115,22 +101,9 @@ func stakeCreate(t *testing.T, pri, addr string, autostake bool) {
 		Address: addr})
 	require.NoError(err)
 	fmt.Println("nonce:", getacc.AccountMeta.PendingNonce)
-	cr, err := action.NewCreateStake(getacc.AccountMeta.PendingNonce, "xxxx", "1200100000000000000000000", 0, autostake, nil, gasLimit, gasPrice)
+	h, err := c.Staking().Create("xxxx", amount, 0, autostake).SetGasLimit(gasLimit).SetGasPrice(gasPrice).SetNonce(getacc.AccountMeta.PendingNonce).Call(context.Background())
 	require.NoError(err)
-	sk, err := crypto.HexStringToPrivateKey(pri)
-	bd := &action.EnvelopeBuilder{}
-	elp := bd.SetNonce(getacc.AccountMeta.PendingNonce).
-		SetGasPrice(gasPrice).
-		SetGasLimit(gasLimit).
-		SetAction(cr).Build()
-	selp, err := action.Sign(elp, sk)
-	require.NoError(err)
-	request := &iotexapi.SendActionRequest{Action: selp.Proto()}
-
-	resp, err := c.API().SendAction(context.Background(), request)
-	require.NoError(err)
-	require.NotEmpty(resp.GetActionHash())
-	checkHash(resp.GetActionHash(), t)
+	checkHash(hex.EncodeToString(h[:]), t)
 }
 
 func TestStakeAddDeposit(t *testing.T) {
@@ -145,23 +118,9 @@ func TestStakeAddDeposit(t *testing.T) {
 	getacc, err := c.API().GetAccount(context.Background(), &iotexapi.GetAccountRequest{
 		Address: sender2})
 	require.NoError(err)
-	cr, err := action.NewDepositToStake(getacc.AccountMeta.PendingNonce, 2, "1200100000000000000000000", nil,
-		gasLimit, gasPrice)
+	h, err := c.Staking().AddDeposit(2, amount).SetGasLimit(gasLimit).SetGasPrice(gasPrice).SetNonce(getacc.AccountMeta.PendingNonce).Call(context.Background())
 	require.NoError(err)
-	sk, err := crypto.HexStringToPrivateKey(privateKey2)
-	bd := &action.EnvelopeBuilder{}
-	elp := bd.SetNonce(getacc.AccountMeta.PendingNonce).
-		SetGasPrice(gasPrice).
-		SetGasLimit(gasLimit).
-		SetAction(cr).Build()
-	selp, err := action.Sign(elp, sk)
-	require.NoError(err)
-	request := &iotexapi.SendActionRequest{Action: selp.Proto()}
-
-	resp, err := c.API().SendAction(context.Background(), request)
-	require.NoError(err)
-	require.NotEmpty(resp.GetActionHash())
-	checkHash(resp.GetActionHash(), t)
+	checkHash(hex.EncodeToString(h[:]), t)
 }
 
 func TestStakeUnstake(t *testing.T) {
@@ -177,23 +136,9 @@ func TestStakeUnstake(t *testing.T) {
 		Address: sender})
 	require.NoError(err)
 	fmt.Println("nonce:", getacc.AccountMeta.PendingNonce)
-	cr, err := action.NewUnstake(getacc.AccountMeta.PendingNonce, 1, nil,
-		gasLimit, gasPrice)
+	h, err := c.Staking().Unstake(1).SetGasLimit(gasLimit).SetGasPrice(gasPrice).SetNonce(getacc.AccountMeta.PendingNonce).Call(context.Background())
 	require.NoError(err)
-	sk, err := crypto.HexStringToPrivateKey(privateKey)
-	bd := &action.EnvelopeBuilder{}
-	elp := bd.SetNonce(getacc.AccountMeta.PendingNonce).
-		SetGasPrice(gasPrice).
-		SetGasLimit(gasLimit).
-		SetAction(cr).Build()
-	selp, err := action.Sign(elp, sk)
-	require.NoError(err)
-	request := &iotexapi.SendActionRequest{Action: selp.Proto()}
-
-	resp, err := c.API().SendAction(context.Background(), request)
-	require.NoError(err)
-	require.NotEmpty(resp.GetActionHash())
-	checkHash(resp.GetActionHash(), t)
+	checkHash(hex.EncodeToString(h[:]), t)
 }
 
 func TestStakeWithdraw(t *testing.T) {
@@ -208,51 +153,9 @@ func TestStakeWithdraw(t *testing.T) {
 	getacc, err := c.API().GetAccount(context.Background(), &iotexapi.GetAccountRequest{
 		Address: sender})
 	require.NoError(err)
-	cr, err := action.NewWithdrawStake(getacc.AccountMeta.PendingNonce, 1, nil, gasLimit, gasPrice)
+	h, err := c.Staking().Withdraw(1).SetGasLimit(gasLimit).SetGasPrice(gasPrice).SetNonce(getacc.AccountMeta.PendingNonce).Call(context.Background())
 	require.NoError(err)
-	sk, err := crypto.HexStringToPrivateKey(privateKey)
-	bd := &action.EnvelopeBuilder{}
-	elp := bd.SetNonce(getacc.AccountMeta.PendingNonce).
-		SetGasPrice(gasPrice).
-		SetGasLimit(gasLimit).
-		SetAction(cr).Build()
-	selp, err := action.Sign(elp, sk)
-	require.NoError(err)
-	request := &iotexapi.SendActionRequest{Action: selp.Proto()}
-
-	resp, err := c.API().SendAction(context.Background(), request)
-	require.NoError(err)
-	require.NotEmpty(resp.GetActionHash())
-	checkHash(resp.GetActionHash(), t)
-}
-
-func TestInjectTransferUseExecution(t *testing.T) {
-	fmt.Println("inject transfer use execution")
-	require := require.New(t)
-	conn, err := grpc.Dial(endpoint, grpc.WithInsecure())
-	require.NoError(err)
-	defer conn.Close()
-	acc, err := account.HexStringToAccount(privateKey)
-	require.NoError(err)
-	c := iotex.NewAuthedClient(iotexapi.NewAPIServiceClient(conn), acc)
-	getacc, err := c.API().GetAccount(context.Background(), &iotexapi.GetAccountRequest{
-		Address: sender})
-	require.NoError(err)
-
-	execution, err := action.NewExecution(to, getacc.AccountMeta.PendingNonce, big.NewInt(111), gasLimit, gasPrice, nil)
-	require.NoError(err)
-	bd := &action.EnvelopeBuilder{}
-	elp := bd.SetNonce(getacc.AccountMeta.PendingNonce).
-		SetGasPrice(gasPrice).
-		SetGasLimit(gasLimit).
-		SetAction(execution).Build()
-	selp, err := action.Sign(elp, acc.PrivateKey())
-	require.NoError(err)
-	ret, err := iotexapi.NewAPIServiceClient(conn).SendAction(context.Background(), &iotexapi.SendActionRequest{
-		Action: selp.Proto(),
-	})
-	require.NoError(err)
-	checkHash(ret.ActionHash, t)
+	checkHash(hex.EncodeToString(h[:]), t)
 }
 
 func TestGetImplicitLog(t *testing.T) {
@@ -267,21 +170,19 @@ func TestGetImplicitLog(t *testing.T) {
 	require.NoError(err)
 	c := iotex.NewAuthedClient(iotexapi.NewAPIServiceClient(conn), acc)
 	for i := uint64(1); i < 120; i++ {
-		ret, err := c.API().GetImplicitTransferLogByBlockHeight(context.Background(),
-			&iotexapi.GetImplicitTransferLogByBlockHeightRequest{
+		ret, err := c.API().GetTransactionLogByBlockHeight(context.Background(),
+			&iotexapi.GetTransactionLogByBlockHeightRequest{
 				BlockHeight: i})
 		if err != nil {
 			continue
 		}
-		for _, trans := range ret.GetBlockImplicitTransferLog().GetImplicitTransferLog() {
+		for _, trans := range ret.GetTransactionLogs().GetLogs() {
 			for _, t := range trans.GetTransactions() {
 				switch {
 				case bytes.Compare(t.GetTopic(), InContractTransfer[:]) == 0:
 					fmt.Println(i, "execution", t.Sender, t.Recipient, t.Amount)
 				case bytes.Compare(t.GetTopic(), BucketWithdrawAmount[:]) == 0:
 					fmt.Println(i, "stakewithdraw", t.Sender, t.Recipient, t.Amount)
-				default:
-					fmt.Println(i, "other")
 				}
 			}
 		}
@@ -348,7 +249,7 @@ func TestInjectTransfer10IOTX(t *testing.T) {
 	c := iotex.NewAuthedClient(iotexapi.NewAPIServiceClient(conn), acc)
 	to, err := address.FromString(_to)
 	require.NoError(err)
-	hash, err := c.Transfer(to, unit.ConvertIotxToRau(10)).SetGasPrice(gasPrice).SetGasLimit(gasLimit).Call(context.Background())
+	hash, err := c.Transfer(to, ConvertIotxToRau(10)).SetGasPrice(gasPrice).SetGasLimit(gasLimit).Call(context.Background())
 	require.NoError(err)
 	require.NotNil(hash)
 	checkHash(hex.EncodeToString(hash[:]), t)
@@ -398,4 +299,10 @@ func checkHash(h string, t *testing.T) {
 	gasFee := new(big.Int).Mul(gasPrice, gasConsumed)
 	fmt.Println("gasconsumed", gasConsumed)
 	fmt.Println("gasfee", gasFee)
+}
+
+// ConvertIotxToRau converts an Iotx to Rau
+func ConvertIotxToRau(iotx int64) *big.Int {
+	itx := big.NewInt(iotx)
+	return itx.Mul(itx, big.NewInt(1e18))
 }
