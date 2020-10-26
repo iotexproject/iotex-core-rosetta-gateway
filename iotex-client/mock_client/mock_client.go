@@ -215,3 +215,18 @@ func (mr *MockIoTexClientMockRecorder) EstimateGasForAction(ctx, action interfac
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EstimateGasForAction", reflect.TypeOf((*MockIoTexClient)(nil).EstimateGasForAction), ctx, action)
 }
+
+// GetBlockTransaction mocks base method
+func (m *MockIoTexClient) GetBlockTransaction(ctx context.Context, actionHash string) (*types.Transaction, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBlockTransaction", ctx, actionHash)
+	ret0, _ := ret[0].(*types.Transaction)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBlockTransaction indicates an expected call of GetBlockTransaction
+func (mr *MockIoTexClientMockRecorder) GetBlockTransaction(ctx, actionHash interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBlockTransaction", reflect.TypeOf((*MockIoTexClient)(nil).GetBlockTransaction), ctx, actionHash)
+}

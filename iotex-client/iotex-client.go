@@ -66,6 +66,8 @@ type (
 		SuggestGasPrice(ctx context.Context) (uint64, error)
 
 		EstimateGasForAction(ctx context.Context, action *iotextypes.Action) (uint64, error)
+
+		GetBlockTransaction(ctx context.Context, actionHash string) (*types.Transaction, error)
 	}
 )
 
@@ -403,4 +405,27 @@ func (c *grpcIoTexClient) covertToOperations(s *iotextypes.TransactionLog_Transa
 	}
 
 	return ops
+}
+
+func (c *grpcIoTexClient) GetBlockTransaction(ctx context.Context, actionHash string) (ret *types.Transaction, err error) {
+	if err = c.connect(); err != nil {
+		return
+	}
+	return c.getBlockTransaction(ctx, actionHash)
+}
+
+func (c *grpcIoTexClient) getBlockTransaction(ctx context.Context, actionHash string) (ret *types.Transaction, err error) {
+		request := &iotexapi.GetTransactionLogByActionHashRequest{
+			ActionHash: actionHash,
+		}
+
+		resp, err := c.client.GetTransactionLogByActionHash(ctx, request)
+		if err != nil {
+			return nil, err
+		}
+		if resp.TransactionLog == nil {
+			return nil, errors.New("not found")
+		}
+		ret = c.packTransaction(hex.EncodeToString(resp.TransactionLog.ActionHash), resp.TransactionLog.Transactions)
+		return
 }

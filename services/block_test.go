@@ -97,11 +97,72 @@ func TestBlockAPIService_Block(t *testing.T) {
 }
 
 func TestBlockAPIService_BlockTransaction(t *testing.T) {
-	require := require.New(t)
-	ctrl := gomock.NewController(t)
-	cli := mock_client.NewMockIoTexClient(ctrl)
-	clt := NewBlockAPIService(cli)
-	resp, typErr := clt.BlockTransaction(context.Background(), nil)
-	require.Equal(ErrNotImplemented, typErr)
-	require.Equal((*types.BlockTransactionResponse)(nil), resp)
+	var (
+		cfg     = testConfig()
+		account = &types.AccountIdentifier{
+			Address: "test account address",
+		}
+		amount = &types.Amount{
+			Value: "1000",
+			Currency: &types.Currency{
+				Symbol:   "IOTX",
+				Decimals: 18,
+			},
+		}
+		tx = &types.Transaction{
+			TransactionIdentifier: &types.TransactionIdentifier{
+				Hash: "blah",
+			},
+			Operations: []*types.Operation{
+				{
+					OperationIdentifier: &types.OperationIdentifier{
+						Index: int64(0),
+					},
+					Type:    "PAYMENT",
+					Status:  "SUCCESS",
+					Account: account,
+					Amount:  amount,
+				},
+				{
+					OperationIdentifier: &types.OperationIdentifier{
+						Index: int64(1),
+					},
+					RelatedOperations: []*types.OperationIdentifier{
+						{
+							Index: int64(0),
+						},
+					},
+					Type:    "PAYMENT",
+					Status:  "SUCCESS",
+					Account: account,
+					Amount:  amount,
+				},
+			},
+		}
+		blockIdentifier = &types.BlockIdentifier{
+			Index: 100,
+			Hash:  "block 100",
+		}
+		networkIdentifier = &types.NetworkIdentifier{
+			Blockchain: "IoTeX",
+			Network:    "testnet",
+		}
+
+		require = require.New(t)
+		ctrl    = gomock.NewController(t)
+		cli     = mock_client.NewMockIoTexClient(ctrl)
+		clt     = NewBlockAPIService(cli)
+	)
+	cli.EXPECT().GetConfig().Return(cfg).AnyTimes()
+	cli.EXPECT().GetBlockTransaction(gomock.Any(), gomock.Any()).
+		Return(tx, nil).
+		AnyTimes()
+
+	resp, typErr := clt.BlockTransaction(context.Background(), &types.BlockTransactionRequest{
+		NetworkIdentifier: networkIdentifier,
+		BlockIdentifier: blockIdentifier,
+		TransactionIdentifier: tx.TransactionIdentifier,
+	})
+	require.Nil(typErr)
+	require.Equal(tx, resp.Transaction)
 }
