@@ -75,9 +75,7 @@ func (s *blockAPIService) BlockTransaction(
 		return nil, ErrUnableToGetBlkTx
 	}
 
-	resp := &types.BlockTransactionResponse{
+	return &types.BlockTransactionResponse{
 		Transaction: transaction,
-	}
-
-	return resp, nil
+	}, nil
 }
