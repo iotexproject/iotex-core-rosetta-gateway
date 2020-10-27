@@ -11,7 +11,7 @@ require (
 	github.com/iotexproject/go-pkgs v0.1.2-0.20200523040337-5f1d9ddaa8ee
 	github.com/iotexproject/iotex-address v0.2.2
 	github.com/iotexproject/iotex-core v1.1.0
-	github.com/iotexproject/iotex-proto v0.4.2
+	github.com/iotexproject/iotex-proto v0.4.4-0.20201026183041-140a556df55d
 	github.com/pkg/errors v0.8.1
 	github.com/spf13/cast v1.3.0
 	github.com/steakknife/bloomfilter v0.0.0-20180922174646-6819c0d2a570 // indirect
