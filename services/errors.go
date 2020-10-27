@@ -177,6 +177,12 @@ var (
 		Retriable: true,
 	}
 
+	ErrUnableToGetBlkTx = &types.Error{
+		Code:      29,
+		Message:   "unable to get block transaction",
+		Retriable: true,
+	}
+
 	ErrorList = []*types.Error{
 		ErrUnableToGetChainID,
 		ErrInvalidBlockchain,
@@ -206,5 +212,6 @@ var (
 		ErrExceededFee,
 		ErrUnableToEstimateGas,
 		ErrUnableToGetSuggestGas,
+		ErrUnableToGetBlkTx,
 	}
 )

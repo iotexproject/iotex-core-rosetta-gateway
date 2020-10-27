@@ -104,6 +104,7 @@ func testServerMeta() *iotextypes.ServerMeta {
 		BuildTime:       time.Now().String(),
 	}
 }
+
 func testTransactionLogs() *iotextypes.TransactionLogs {
 	return &iotextypes.TransactionLogs{
 		Logs: []*iotextypes.TransactionLog{
@@ -142,6 +143,22 @@ func testTransactionLogs() *iotextypes.TransactionLogs {
 	}
 }
 
+func testTransactionLog() *iotextypes.TransactionLog {
+	return &iotextypes.TransactionLog{
+		ActionHash:      []byte("f8cdb02b5f0d219d4aeebc47317a5639f74acac66bca44806040a841838bf2d9"),
+		NumTransactions: 2,
+		Transactions: []*iotextypes.TransactionLog_Transaction{
+			{
+				Topic:     []byte("topic 1"),
+				Amount:    unit.ConvertIotxToRau(rand.Int63n(1)).String(),
+				Sender:    "sender",
+				Recipient: "recipient",
+				Type:      0,
+			},
+		},
+	}
+}
+
 func newMockServer(t *testing.T) (svr iotexapi.APIServiceServer, cli IoTexClient) {
 	require := require.New(t)
 	service := mock_iotexapi.NewMockAPIServiceServer(gomock.NewController(t))
@@ -164,6 +181,7 @@ func newMockServer(t *testing.T) (svr iotexapi.APIServiceServer, cli IoTexClient
 	blockIdentifier := testBlockIdentifier(chain)
 	serverMeta := testServerMeta()
 	transactionLogs := testTransactionLogs()
+	transactionLog := testTransactionLog()
 
 	service.EXPECT().
 		GetBlockMetas(gomock.Any(), gomock.AssignableToTypeOf(&iotexapi.GetBlockMetasRequest{})).
@@ -245,6 +263,12 @@ func newMockServer(t *testing.T) (svr iotexapi.APIServiceServer, cli IoTexClient
 		Return(&iotexapi.GetTransactionLogByBlockHeightResponse{
 			TransactionLogs: transactionLogs,
 			BlockIdentifier: blockIdentifier,
+		}, nil).
+		AnyTimes()
+	service.EXPECT().
+		GetTransactionLogByActionHash(gomock.Any(), gomock.AssignableToTypeOf(&iotexapi.GetTransactionLogByActionHashRequest{})).
+		Return(&iotexapi.GetTransactionLogByActionHashResponse{
+			TransactionLog: transactionLog,
 		}, nil).
 		AnyTimes()
 	t.Cleanup(server.Stop)
@@ -372,4 +396,17 @@ func TestGrpcIoTexClient_GetConfig(t *testing.T) {
 	_, cli := newMockServer(t)
 	config := cli.GetConfig()
 	require.Equal(t, testConfig(), config)
+}
+
+func TestGrpcIoTexClient_GetBlockTransaction(t *testing.T) {
+	require := require.New(t)
+	_, cli := newMockServer(t)
+	// TODO: fill transactions data into mock server, and check it.
+	transaction, err := cli.GetBlockTransaction(context.Background(), "")
+	tx := testTransactionLog()
+	require.NoError(err)
+	require.Equal(hex.EncodeToString(tx.ActionHash), transaction.TransactionIdentifier.Hash)
+	require.Equal(tx.Transactions[0].Type.String(), transaction.Operations[0].Type)
+	require.Equal(tx.Transactions[0].Amount, transaction.Operations[0].Amount.Value)
+	require.Equal(tx.Transactions[0].Sender, transaction.Operations[0].Account.Address)
 }
