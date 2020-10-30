@@ -40,11 +40,22 @@ func (s *memPoolAPIService) Mempool (
 }
 
 // MempoolTransaction implements the /mempool/transaction endpoint.
-// Note: we don't implement this, since we already return all transactions
-// in the /mempool endpoint reponse above.
 func (s *memPoolAPIService) MempoolTransaction(
 	ctx context.Context,
-	in *types.MempoolTransactionRequest,
+	request *types.MempoolTransactionRequest,
 	) (*types.MempoolTransactionResponse, *types.Error) {
-	return nil, ErrNotImplemented
+	terr := ValidateNetworkIdentifier(ctx, s.client, request.NetworkIdentifier)
+	if terr != nil {
+		return nil, terr
+	}
+
+
+	trans, err := s.client.GetMemPoolTransaction(ctx, request.TransactionIdentifier.Hash)
+	if err != nil {
+		return nil, ErrUnableToGetMemPoolTx
+	}
+
+	return &types.MempoolTransactionResponse{
+		Transaction: trans,
+	}, nil
 }

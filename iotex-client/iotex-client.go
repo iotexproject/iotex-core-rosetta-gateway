@@ -11,6 +11,7 @@ import (
 	"crypto/tls"
 	"encoding/hex"
 	"log"
+	"math/big"
 	"sync"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
@@ -70,6 +71,8 @@ type (
 		GetBlockTransaction(ctx context.Context, actionHash string) (*types.Transaction, error)
 
 		GetMemPool(ctx context.Context, actionHashes []string) ([]*types.TransactionIdentifier, error)
+
+		GetMemPoolTransaction(ctx context.Context, h string) (*types.Transaction, error)
 	}
 )
 
@@ -83,6 +86,42 @@ type (
 		cfg      *config.Config
 	}
 )
+
+type (
+	addressAmount struct {
+		address    string
+		amount     string
+		actionType string
+	}
+	addressAmountList []*addressAmount
+)
+
+const (
+	rewardingProtocolID      = "rewarding"
+	stakingProtocolID        = "staking"
+	Transfer                 = "transfer"
+	DepositToRewardingFund   = "depositToRewardingFund"
+	ClaimFromRewardingFund   = "claimFromRewardingFund"
+	StakeCreate              = "stakeCreate"
+	StakeAddDeposit          = "stakeAddDeposit"
+	CandidateRegister        = "candidateRegister"
+	ActionTypeFee            = "fee"
+)
+
+var (
+	RewardingAddress string
+	StakingAddress string
+)
+
+func init() {
+	h := hash.Hash160b([]byte(rewardingProtocolID))
+	addr, _ := address.FromBytes(h[:])
+	RewardingAddress = addr.String()
+
+	h = hash.Hash160b([]byte(stakingProtocolID))
+	addr, _ = address.FromBytes(h[:])
+	StakingAddress = addr.String()
+}
 
 // NewIoTexClient returns an implementation of IoTexClient
 func NewIoTexClient(cfg *config.Config) (cli IoTexClient, err error) {
@@ -449,7 +488,7 @@ func (c *grpcIoTexClient) getMemPool(ctx context.Context, actionHashes []string)
 		return nil, err
 	}
 	if resp.Actions == nil {
-		return nil, errors.New("not found")
+		return ret, nil
 	}
 	for _, act := range resp.Actions {
 		byteAct, err := proto.Marshal(act)
@@ -464,3 +503,142 @@ func (c *grpcIoTexClient) getMemPool(ctx context.Context, actionHashes []string)
 
 	return
 }
+
+func (c *grpcIoTexClient) GetMemPoolTransaction(ctx context.Context, h string) (ret *types.Transaction, err error) {
+	if err = c.connect(); err != nil {
+		return
+	}
+	return c.getMemPoolTransaction(ctx, h)
+}
+
+func (c *grpcIoTexClient) getMemPoolTransaction(ctx context.Context, h string) (ret *types.Transaction, err error) {
+	request := &iotexapi.GetActPoolActionsRequest{
+		ActionHashes: []string{h},
+	}
+
+	acts, err := c.client.GetActPoolActions(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+	if acts.Actions == nil || len(acts.Actions) < 1{
+		return nil, errors.New("action not found")
+	}
+	act := acts.Actions[0]
+
+	ret, _ = c.gasFeeAndStatus(act, h)
+	amount, senderSign, actionType, dst, err := assertAction(act)
+	if err != nil || amount == "" || actionType == "" {
+		return
+	}
+	callerAddr, err := getCaller(act)
+	if err != nil {
+		return
+	}
+
+	err = c.handleGeneralAction(ret, callerAddr.String(), amount, senderSign, actionType, dst, StatusSuccess)
+	return
+}
+
+func (c *grpcIoTexClient) gasFeeAndStatus(act *iotextypes.Action, h string) (ret *types.Transaction, err error) {
+	callerAddr, err := getCaller(act)
+	if err != nil {
+		return
+	}
+	gasFee := new(big.Int).SetUint64(act.GetCore().GetGasLimit())
+	amount := "-" + gasFee.String()
+
+	ret = &types.Transaction{TransactionIdentifier: &types.TransactionIdentifier{Hash: h}}
+	aal := addressAmountList{
+		{callerAddr.String(), amount, ActionTypeFee},
+		{RewardingAddress, gasFee.String(), ActionTypeFee},
+	}
+	err = c.addOperation(ret, aal, StatusSuccess, 0)
+	return
+}
+
+func (c *grpcIoTexClient) addOperation(ret *types.Transaction, amountList addressAmountList, status string, startIndex int64) error {
+	var oper []*types.Operation
+	for _, s := range amountList {
+		oper = append(oper, &types.Operation{
+			OperationIdentifier: &types.OperationIdentifier{
+				Index:        startIndex,
+				NetworkIndex: nil,
+			},
+			RelatedOperations: nil,
+			Type:              s.actionType,
+			Status:            status,
+			Account: &types.AccountIdentifier{
+				Address:    s.address,
+				SubAccount: nil,
+				Metadata:   nil,
+			},
+			Amount: &types.Amount{
+				Value: s.amount,
+				Currency: &types.Currency{
+					Symbol:   c.cfg.Currency.Symbol,
+					Decimals: c.cfg.Currency.Decimals,
+					Metadata: nil,
+				},
+				Metadata: nil,
+			},
+			Metadata: nil,
+		})
+		startIndex++
+	}
+	ret.Operations = append(ret.Operations, oper...)
+	return nil
+}
+
+func assertAction(act *iotextypes.Action) (amount, senderSign, actionType, dst string, err error) {
+	amount = "0"
+	senderSign = "-"
+	switch {
+	case act.GetCore().GetTransfer() != nil:
+		actionType = Transfer
+		amount = act.GetCore().GetTransfer().GetAmount()
+		dst = act.GetCore().GetTransfer().GetRecipient()
+	case act.GetCore().GetDepositToRewardingFund() != nil:
+		actionType = DepositToRewardingFund
+		amount = act.GetCore().GetDepositToRewardingFund().GetAmount()
+		dst = RewardingAddress
+	case act.GetCore().GetClaimFromRewardingFund() != nil:
+		actionType = ClaimFromRewardingFund
+		amount = act.GetCore().GetClaimFromRewardingFund().GetAmount()
+		senderSign = "+"
+		dst = RewardingAddress
+	case act.GetCore().GetStakeAddDeposit() != nil:
+		actionType = StakeAddDeposit
+		amount = act.GetCore().GetStakeAddDeposit().GetAmount()
+		dst = StakingAddress
+	case act.GetCore().GetStakeCreate() != nil:
+		actionType = StakeCreate
+		amount = act.GetCore().GetStakeCreate().GetStakedAmount()
+		dst = StakingAddress
+	case act.GetCore().GetCandidateRegister() != nil:
+		actionType = CandidateRegister
+		amount = act.GetCore().GetCandidateRegister().GetStakedAmount()
+		dst = StakingAddress
+	}
+	return
+}
+
+func (c *grpcIoTexClient) handleGeneralAction(ret *types.Transaction, callerAddr, amount, senderSign, actionType, dst, status string) error {
+	if amount == "0" {
+		return nil
+	}
+
+	senderAmountWithSign := amount
+	dstAmountWithSign := amount
+	if senderSign == "-" {
+		senderAmountWithSign = senderSign + amount
+	} else {
+		dstAmountWithSign = "-" + amount
+	}
+
+	aal := addressAmountList{{callerAddr, senderAmountWithSign, actionType}}
+	if dst != "" {
+		aal = append(aal, &addressAmount{dst, dstAmountWithSign, actionType})
+	}
+	return c.addOperation(ret, aal, status, 2)
+}
+

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"math/rand"
 	"net"
+	"strconv"
 	"testing"
 	"time"
 
@@ -183,6 +184,7 @@ func testActions() []*iotextypes.Action {
 	}
 }
 
+
 func newMockServer(t *testing.T) (svr iotexapi.APIServiceServer, cli IoTexClient) {
 	require := require.New(t)
 	service := mock_iotexapi.NewMockAPIServiceServer(gomock.NewController(t))
@@ -247,9 +249,9 @@ func newMockServer(t *testing.T) (svr iotexapi.APIServiceServer, cli IoTexClient
 		GetActPoolActions(gomock.Any(), gomock.AssignableToTypeOf(&iotexapi.GetActPoolActionsRequest{})).
 		DoAndReturn(func(ctx context.Context, req *iotexapi.GetActPoolActionsRequest) (*iotexapi.GetActPoolActionsResponse, error) {
 			return &iotexapi.GetActPoolActionsResponse{
-			Actions: testActions(),
-		}, nil
-	}).
+				Actions: testActions(),
+			}, nil
+		}).
 		AnyTimes()
 
 	topics := []hash.Hash256{
@@ -452,4 +454,22 @@ func TestGrpcIoTexClient_GetMemPool(t *testing.T) {
 	acts, err = cli.GetMemPool(context.Background(), []string{"322884fb04663019be6fb461d9453827487eafdd57b4de3bd89a7d77c9bf8395"})
 	require.NoError(err)
 	require.Equal(true, len(acts) > 0)
+}
+
+func TestGrpcIoTexClient_GetMemPoolTransaction(t *testing.T) {
+	require := require.New(t)
+	_, cli := newMockServer(t)
+
+	trans, err := cli.GetMemPoolTransaction(context.Background(), "322884fb04663019be6fb461d9453827487eafdd57b4de3bd89a7d77c9bf8395")
+	require.NoError(err)
+	for i := range trans.Operations {
+		act := testActions()[0].GetCore()
+		oper := trans.Operations[i]
+		if oper.Type == ActionTypeFee && act.GetTransfer().Recipient == oper.Account.Address {
+			require.Equal(strconv.Itoa(int(act.GasLimit)), oper.Amount.Value)
+		}
+		if oper.Type == Transfer && act.GetTransfer().Recipient == oper.Account.Address {
+			require.Equal(act.GetTransfer().Amount, oper.Amount.Value)
+		}
+	}
 }
