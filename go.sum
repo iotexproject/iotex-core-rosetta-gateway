@@ -181,6 +181,8 @@ github.com/iotexproject/iotex-proto v0.3.1-0.20200517033504-27fc88c338bb/go.mod 
 github.com/iotexproject/iotex-proto v0.3.2-0.20200729044038-c22fbb206571/go.mod h1:xKA4yUbg208k1j3+t10Pe7IzT6uHcP+/4rsDanF4Q58=
 github.com/iotexproject/iotex-proto v0.4.2 h1:h2x6eJD9XSd4ttRLpisr3NAsktlrAOL0rnrIyK7p8EE=
 github.com/iotexproject/iotex-proto v0.4.2/go.mod h1:VamfHxZ58AbpWJumRIE/u9tt/TouIlDkzk0dazVKKRY=
+github.com/iotexproject/iotex-proto v0.4.4-0.20201026183041-140a556df55d h1:ZSepnFhcUVBtX1yMplvU84UInPomGfglDSyid4TX7hg=
+github.com/iotexproject/iotex-proto v0.4.4-0.20201026183041-140a556df55d/go.mod h1:VamfHxZ58AbpWJumRIE/u9tt/TouIlDkzk0dazVKKRY=
 github.com/ipfs/go-cid v0.0.1/go.mod h1:GHWU/WuQdMPmIosc4Yn1bcCT7dSeX4lBafM7iqUPQvM=
 github.com/ipfs/go-datastore v0.0.1/go.mod h1:d4KVXhMt913cLBEI/PXAy6ko+W7e9AhyAKBGh803qeE=
 github.com/ipfs/go-datastore v0.0.4/go.mod h1:d4KVXhMt913cLBEI/PXAy6ko+W7e9AhyAKBGh803qeE=

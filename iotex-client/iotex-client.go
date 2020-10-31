@@ -68,6 +68,8 @@ type (
 		EstimateGasForAction(ctx context.Context, action *iotextypes.Action) (uint64, error)
 
 		GetBlockTransaction(ctx context.Context, actionHash string) (*types.Transaction, error)
+
+		GetMemPool(ctx context.Context, actionHashes []string) ([]*types.TransactionIdentifier, error)
 	}
 )
 
@@ -428,4 +430,34 @@ func (c *grpcIoTexClient) getBlockTransaction(ctx context.Context, actionHash st
 		}
 		ret = c.packTransaction(hex.EncodeToString(resp.TransactionLog.ActionHash), resp.TransactionLog.Transactions)
 		return
+}
+
+func (c *grpcIoTexClient) GetMemPool(ctx context.Context, actionHashes []string) (ret []*types.TransactionIdentifier, err error) {
+	if err = c.connect(); err != nil {
+		return
+	}
+	return c.getMemPool(ctx, actionHashes)
+}
+
+func (c *grpcIoTexClient) getMemPool(ctx context.Context, actionHashes []string) (ret []*types.TransactionIdentifier, err error) {
+	request := &iotexapi.GetActPoolActionsRequest{
+		ActionHashes: actionHashes,
+	}
+
+	resp, err := c.client.GetActPoolActions(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+	for _, act := range resp.Actions {
+		byteAct, err := proto.Marshal(act)
+		if err != nil {
+			return nil, err
+		}
+		h := hash.Hash256b(byteAct)
+		ret = append(ret, &types.TransactionIdentifier{
+			Hash: hex.EncodeToString(h[:]),
+		})
+	}
+
+	return
 }

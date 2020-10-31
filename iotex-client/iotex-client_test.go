@@ -159,6 +159,30 @@ func testTransactionLog() *iotextypes.TransactionLog {
 	}
 }
 
+func testActions() []*iotextypes.Action {
+	senderPubKey, _ := hex.DecodeString("04403d3c0dbd3270ddfc248c3df1f9aafd60f1d8e7456961c9ef26292262cc68f0ea9690263bef9e197a38f06026814fc70912c2b98d2e90a68f8ddc5328180a01")
+	signature, _ := hex.DecodeString("010203040506070809")
+	return []*iotextypes.Action{
+		{
+			Core:         &iotextypes.ActionCore{
+				Version:  1,
+				Nonce:    10,
+				GasLimit: 20010,
+				GasPrice: "11000000000000000000",
+				Action:   &iotextypes.ActionCore_Transfer{
+					Transfer: &iotextypes.Transfer{
+						Amount:    "1010000000000000000000",
+						Recipient: "io1jh0ekmccywfkmj7e8qsuzsupnlk3w5337hjjg2",
+						Payload:   nil,
+					},
+				},
+			},
+			SenderPubKey: senderPubKey,
+			Signature:    signature,
+		},
+	}
+}
+
 func newMockServer(t *testing.T) (svr iotexapi.APIServiceServer, cli IoTexClient) {
 	require := require.New(t)
 	service := mock_iotexapi.NewMockAPIServiceServer(gomock.NewController(t))
@@ -218,6 +242,14 @@ func newMockServer(t *testing.T) (svr iotexapi.APIServiceServer, cli IoTexClient
 				ActionHash: hex.EncodeToString(hash.ZeroHash256[:]),
 			}, nil
 		}).
+		AnyTimes()
+	service.EXPECT().
+		GetActPoolActions(gomock.Any(), gomock.AssignableToTypeOf(&iotexapi.GetActPoolActionsRequest{})).
+		DoAndReturn(func(ctx context.Context, req *iotexapi.GetActPoolActionsRequest) (*iotexapi.GetActPoolActionsResponse, error) {
+			return &iotexapi.GetActPoolActionsResponse{
+			Actions: testActions(),
+		}, nil
+	}).
 		AnyTimes()
 
 	topics := []hash.Hash256{
@@ -401,7 +433,6 @@ func TestGrpcIoTexClient_GetConfig(t *testing.T) {
 func TestGrpcIoTexClient_GetBlockTransaction(t *testing.T) {
 	require := require.New(t)
 	_, cli := newMockServer(t)
-	// TODO: fill transactions data into mock server, and check it.
 	transaction, err := cli.GetBlockTransaction(context.Background(), "")
 	tx := testTransactionLog()
 	require.NoError(err)
@@ -409,4 +440,16 @@ func TestGrpcIoTexClient_GetBlockTransaction(t *testing.T) {
 	require.Equal(tx.Transactions[0].Type.String(), transaction.Operations[0].Type)
 	require.Equal(tx.Transactions[0].Amount, transaction.Operations[0].Amount.Value)
 	require.Equal(tx.Transactions[0].Sender, transaction.Operations[0].Account.Address)
+}
+
+func TestGrpcIoTexClient_GetMemPool(t *testing.T) {
+	require := require.New(t)
+	_, cli := newMockServer(t)
+	acts, err := cli.GetMemPool(context.Background(), []string{})
+	require.NoError(err)
+	require.Equal(true, len(acts) > 0)
+
+	acts, err = cli.GetMemPool(context.Background(), []string{"322884fb04663019be6fb461d9453827487eafdd57b4de3bd89a7d77c9bf8395"})
+	require.NoError(err)
+	require.Equal(true, len(acts) > 0)
 }

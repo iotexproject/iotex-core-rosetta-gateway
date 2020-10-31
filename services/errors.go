@@ -183,6 +183,18 @@ var (
 		Retriable: true,
 	}
 
+	ErrUnableToGetMemPool = &types.Error{
+		Code:      30,
+		Message:   "unable to get mempool",
+		Retriable: true,
+	}
+
+	ErrUnableToGetMemPoolTx = &types.Error{
+		Code:      31,
+		Message:   "unable to get mempool transaction",
+		Retriable: true,
+	}
+
 	ErrorList = []*types.Error{
 		ErrUnableToGetChainID,
 		ErrInvalidBlockchain,
@@ -213,5 +225,7 @@ var (
 		ErrUnableToEstimateGas,
 		ErrUnableToGetSuggestGas,
 		ErrUnableToGetBlkTx,
+		ErrUnableToGetMemPool,
+		ErrUnableToGetMemPoolTx,
 	}
 )
