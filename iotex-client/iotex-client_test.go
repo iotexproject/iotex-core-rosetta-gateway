@@ -184,7 +184,6 @@ func testActions() []*iotextypes.Action {
 	}
 }
 
-
 func newMockServer(t *testing.T) (svr iotexapi.APIServiceServer, cli IoTexClient) {
 	require := require.New(t)
 	service := mock_iotexapi.NewMockAPIServiceServer(gomock.NewController(t))

@@ -460,9 +460,6 @@ func (c *grpcIoTexClient) getMemPool(ctx context.Context, actionHashes []string)
 	if err != nil {
 		return nil, err
 	}
-	if resp.Actions == nil {
-		return ret, nil
-	}
 	for _, act := range resp.Actions {
 		byteAct, err := proto.Marshal(act)
 		if err != nil {
