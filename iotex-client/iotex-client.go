@@ -96,33 +96,6 @@ type (
 	addressAmountList []*addressAmount
 )
 
-const (
-	rewardingProtocolID      = "rewarding"
-	stakingProtocolID        = "staking"
-	Transfer                 = "transfer"
-	DepositToRewardingFund   = "depositToRewardingFund"
-	ClaimFromRewardingFund   = "claimFromRewardingFund"
-	StakeCreate              = "stakeCreate"
-	StakeAddDeposit          = "stakeAddDeposit"
-	CandidateRegister        = "candidateRegister"
-	ActionTypeFee            = "fee"
-)
-
-var (
-	RewardingAddress string
-	StakingAddress string
-)
-
-func init() {
-	h := hash.Hash160b([]byte(rewardingProtocolID))
-	addr, _ := address.FromBytes(h[:])
-	RewardingAddress = addr.String()
-
-	h = hash.Hash160b([]byte(stakingProtocolID))
-	addr, _ = address.FromBytes(h[:])
-	StakingAddress = addr.String()
-}
-
 // NewIoTexClient returns an implementation of IoTexClient
 func NewIoTexClient(cfg *config.Config) (cli IoTexClient, err error) {
 	return &grpcIoTexClient{cfg: cfg}, nil
@@ -523,43 +496,26 @@ func (c *grpcIoTexClient) getMemPoolTransaction(ctx context.Context, h string) (
 	if acts.Actions == nil || len(acts.Actions) < 1{
 		return nil, errors.New("action not found")
 	}
-	act := acts.Actions[0]
+	return c.packActPoolActionToTransaction(acts.Actions[0], h)
+}
 
-	ret, _ = c.gasFeeAndStatus(act, h)
-	amount, senderSign, actionType, dst, err := assertAction(act)
-	if err != nil || amount == "" || actionType == "" {
-		return
-	}
-	callerAddr, err := getCaller(act)
+func (c *grpcIoTexClient) packActPoolActionToTransaction(act *iotextypes.Action, h string) (ret *types.Transaction, err error) {
+	var aal addressAmountList
+	aal, err = packActionToAddressAmounts(act)
 	if err != nil {
 		return
 	}
 
-	err = c.handleGeneralAction(ret, callerAddr.String(), amount, senderSign, actionType, dst, StatusSuccess)
+	ret = &types.Transaction{
+		TransactionIdentifier: &types.TransactionIdentifier{Hash: h},
+		Operations: c.covertAddressAmountsToOperations(aal, StatusSuccess, 0),
+	}
 	return
 }
 
-func (c *grpcIoTexClient) gasFeeAndStatus(act *iotextypes.Action, h string) (ret *types.Transaction, err error) {
-	callerAddr, err := getCaller(act)
-	if err != nil {
-		return
-	}
-	gasFee := new(big.Int).SetUint64(act.GetCore().GetGasLimit())
-	amount := "-" + gasFee.String()
-
-	ret = &types.Transaction{TransactionIdentifier: &types.TransactionIdentifier{Hash: h}}
-	aal := addressAmountList{
-		{callerAddr.String(), amount, ActionTypeFee},
-		{RewardingAddress, gasFee.String(), ActionTypeFee},
-	}
-	err = c.addOperation(ret, aal, StatusSuccess, 0)
-	return
-}
-
-func (c *grpcIoTexClient) addOperation(ret *types.Transaction, amountList addressAmountList, status string, startIndex int64) error {
-	var oper []*types.Operation
+func (c *grpcIoTexClient) covertAddressAmountsToOperations(amountList addressAmountList, status string, startIndex int64) (ret []*types.Operation) {
 	for _, s := range amountList {
-		oper = append(oper, &types.Operation{
+		ret = append(ret, &types.Operation{
 			OperationIdentifier: &types.OperationIdentifier{
 				Index:        startIndex,
 				NetworkIndex: nil,
@@ -585,46 +541,45 @@ func (c *grpcIoTexClient) addOperation(ret *types.Transaction, amountList addres
 		})
 		startIndex++
 	}
-	ret.Operations = append(ret.Operations, oper...)
-	return nil
+	return ret
 }
 
-func assertAction(act *iotextypes.Action) (amount, senderSign, actionType, dst string, err error) {
-	amount = "0"
-	senderSign = "-"
+func packActionToAddressAmounts(act *iotextypes.Action) (aal addressAmountList, err error) {
+	amount := "0"
+	senderSign := "-"
+	actionType := ""
+	dst := ""
+	callerAddr, err := getCaller(act)
+	if err != nil {
+		return aal, err
+	}
+
 	switch {
 	case act.GetCore().GetTransfer() != nil:
-		actionType = Transfer
+		actionType = iotextypes.TransactionLogType_NATIVE_TRANSFER.String()
 		amount = act.GetCore().GetTransfer().GetAmount()
 		dst = act.GetCore().GetTransfer().GetRecipient()
 	case act.GetCore().GetDepositToRewardingFund() != nil:
-		actionType = DepositToRewardingFund
+		actionType = iotextypes.TransactionLogType_DEPOSIT_TO_REWARDING_FUND.String()
 		amount = act.GetCore().GetDepositToRewardingFund().GetAmount()
-		dst = RewardingAddress
+		dst = address.RewardingPoolAddr
 	case act.GetCore().GetClaimFromRewardingFund() != nil:
-		actionType = ClaimFromRewardingFund
+		actionType = iotextypes.TransactionLogType_CLAIM_FROM_REWARDING_FUND.String()
 		amount = act.GetCore().GetClaimFromRewardingFund().GetAmount()
 		senderSign = "+"
-		dst = RewardingAddress
+		dst = address.RewardingPoolAddr
 	case act.GetCore().GetStakeAddDeposit() != nil:
-		actionType = StakeAddDeposit
+		actionType = iotextypes.TransactionLogType_DEPOSIT_TO_BUCKET.String()
 		amount = act.GetCore().GetStakeAddDeposit().GetAmount()
-		dst = StakingAddress
+		dst = address.StakingBucketPoolAddr
 	case act.GetCore().GetStakeCreate() != nil:
-		actionType = StakeCreate
+		actionType = iotextypes.TransactionLogType_CREATE_BUCKET.String()
 		amount = act.GetCore().GetStakeCreate().GetStakedAmount()
-		dst = StakingAddress
+		dst = address.StakingBucketPoolAddr
 	case act.GetCore().GetCandidateRegister() != nil:
-		actionType = CandidateRegister
+		actionType = iotextypes.TransactionLogType_CANDIDATE_SELF_STAKE.String()
 		amount = act.GetCore().GetCandidateRegister().GetStakedAmount()
-		dst = StakingAddress
-	}
-	return
-}
-
-func (c *grpcIoTexClient) handleGeneralAction(ret *types.Transaction, callerAddr, amount, senderSign, actionType, dst, status string) error {
-	if amount == "0" {
-		return nil
+		dst = address.StakingBucketPoolAddr
 	}
 
 	senderAmountWithSign := amount
@@ -635,10 +590,14 @@ func (c *grpcIoTexClient) handleGeneralAction(ret *types.Transaction, callerAddr
 		dstAmountWithSign = "-" + amount
 	}
 
-	aal := addressAmountList{{callerAddr, senderAmountWithSign, actionType}}
+	fee := new(big.Int).SetUint64(act.GetCore().GetGasLimit())
+	aal = addressAmountList{
+		{callerAddr.String(), "-"+fee.String(), iotextypes.TransactionLogType_GAS_FEE.String()},
+		{address.RewardingPoolAddr, fee.String(), iotextypes.TransactionLogType_GAS_FEE.String()},
+	}
+	aal = append(aal, &addressAmount{callerAddr.String(), senderAmountWithSign, actionType})
 	if dst != "" {
 		aal = append(aal, &addressAmount{dst, dstAmountWithSign, actionType})
 	}
-	return c.addOperation(ret, aal, status, 2)
+	return aal, nil
 }
-

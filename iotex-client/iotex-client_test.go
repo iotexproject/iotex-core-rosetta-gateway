@@ -465,10 +465,10 @@ func TestGrpcIoTexClient_GetMemPoolTransaction(t *testing.T) {
 	for i := range trans.Operations {
 		act := testActions()[0].GetCore()
 		oper := trans.Operations[i]
-		if oper.Type == ActionTypeFee && act.GetTransfer().Recipient == oper.Account.Address {
+		if oper.Type == iotextypes.TransactionLogType_GAS_FEE.String() && act.GetTransfer().Recipient == oper.Account.Address {
 			require.Equal(strconv.Itoa(int(act.GasLimit)), oper.Amount.Value)
 		}
-		if oper.Type == Transfer && act.GetTransfer().Recipient == oper.Account.Address {
+		if oper.Type == iotextypes.TransactionLogType_NATIVE_TRANSFER.String() && act.GetTransfer().Recipient == oper.Account.Address {
 			require.Equal(act.GetTransfer().Amount, oper.Amount.Value)
 		}
 	}
