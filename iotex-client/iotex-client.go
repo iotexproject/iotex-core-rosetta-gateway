@@ -12,7 +12,6 @@ import (
 	"encoding/hex"
 	"log"
 	"math/big"
-	"strconv"
 	"sync"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
