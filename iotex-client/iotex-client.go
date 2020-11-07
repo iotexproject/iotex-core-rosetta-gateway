@@ -12,6 +12,7 @@ import (
 	"encoding/hex"
 	"log"
 	"math/big"
+	"strconv"
 	"sync"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
@@ -89,9 +90,11 @@ type (
 
 type (
 	addressAmount struct {
-		address    string
-		amount     string
-		actionType string
+		senderAddr   string
+		dstAddr      string
+		senderAmount string
+		dstAmount    string
+		actionType   string
 	}
 	addressAmountList []*addressAmount
 )
@@ -493,10 +496,10 @@ func (c *grpcIoTexClient) getMemPoolTransaction(ctx context.Context, h string) (
 	if acts.Actions == nil || len(acts.Actions) < 1{
 		return nil, errors.New("action not found")
 	}
-	return c.packActPoolActionToTransaction(acts.Actions[0], h)
+	return c.packActionToTransaction(acts.Actions[0], h, StatusSuccess)
 }
 
-func (c *grpcIoTexClient) packActPoolActionToTransaction(act *iotextypes.Action, h string) (ret *types.Transaction, err error) {
+func (c *grpcIoTexClient) packActionToTransaction(act *iotextypes.Action, h, status string) (ret *types.Transaction, err error) {
 	var aal addressAmountList
 	aal, err = packActionToAddressAmounts(act)
 	if err != nil {
@@ -505,40 +508,48 @@ func (c *grpcIoTexClient) packActPoolActionToTransaction(act *iotextypes.Action,
 
 	ret = &types.Transaction{
 		TransactionIdentifier: &types.TransactionIdentifier{Hash: h},
-		Operations: c.covertAddressAmountsToOperations(aal, StatusSuccess, 0),
+		Operations:            c.covertAddressAmountsToOperations(aal, status),
 	}
 	return
 }
 
-func (c *grpcIoTexClient) covertAddressAmountsToOperations(amountList addressAmountList, status string, startIndex int64) (ret []*types.Operation) {
-	for _, s := range amountList {
-		ret = append(ret, &types.Operation{
-			OperationIdentifier: &types.OperationIdentifier{
-				Index:        startIndex,
-				NetworkIndex: nil,
-			},
-			RelatedOperations: nil,
-			Type:              s.actionType,
-			Status:            status,
-			Account: &types.AccountIdentifier{
-				Address:    s.address,
-				SubAccount: nil,
-				Metadata:   nil,
-			},
-			Amount: &types.Amount{
-				Value: s.amount,
-				Currency: &types.Currency{
-					Symbol:   c.cfg.Currency.Symbol,
-					Decimals: c.cfg.Currency.Decimals,
-					Metadata: nil,
-				},
+func (c *grpcIoTexClient) covertAddressAmountsToOperations(amountList addressAmountList, status string) (ret []*types.Operation) {
+	var index int64 = 0
+	for _, aa := range amountList {
+		sender := c.genOperation(aa.senderAddr, status, aa.senderAmount, aa.actionType, index)
+		index++
+		dst := c.genOperation(aa.dstAddr, status, aa.dstAmount, aa.actionType, index)
+		index++
+		ret = append(ret, sender, dst)
+	}
+	return ret
+}
+
+func (c *grpcIoTexClient) genOperation(addr, status, amount, actType string, index int64) *types.Operation {
+	return &types.Operation{
+		OperationIdentifier: &types.OperationIdentifier{
+			Index:        index,
+			NetworkIndex: nil,
+		},
+		RelatedOperations: nil,
+		Type:              actType,
+		Status:            status,
+		Account: &types.AccountIdentifier{
+			Address:    addr,
+			SubAccount: nil,
+			Metadata:   nil,
+		},
+		Amount: &types.Amount{
+			Value: amount,
+			Currency: &types.Currency{
+				Symbol:   c.cfg.Currency.Symbol,
+				Decimals: c.cfg.Currency.Decimals,
 				Metadata: nil,
 			},
 			Metadata: nil,
-		})
-		startIndex++
+		},
+		Metadata: nil,
 	}
-	return ret
 }
 
 func packActionToAddressAmounts(act *iotextypes.Action) (aal addressAmountList, err error) {
@@ -577,6 +588,10 @@ func packActionToAddressAmounts(act *iotextypes.Action) (aal addressAmountList, 
 		actionType = iotextypes.TransactionLogType_CANDIDATE_SELF_STAKE.String()
 		amount = act.GetCore().GetCandidateRegister().GetStakedAmount()
 		dst = address.StakingBucketPoolAddr
+	case act.GetCore().GetExecution() != nil:
+		actionType = iotextypes.TransactionLogType_IN_CONTRACT_TRANSFER.String()
+		amount = act.GetCore().GetExecution().GetAmount()
+		dst = address.StakingBucketPoolAddr
 	}
 
 	senderAmountWithSign := amount
@@ -588,13 +603,19 @@ func packActionToAddressAmounts(act *iotextypes.Action) (aal addressAmountList, 
 	}
 
 	fee := new(big.Int).SetUint64(act.GetCore().GetGasLimit())
-	aal = addressAmountList{
-		{callerAddr.String(), "-"+fee.String(), iotextypes.TransactionLogType_GAS_FEE.String()},
-		{address.RewardingPoolAddr, fee.String(), iotextypes.TransactionLogType_GAS_FEE.String()},
-	}
-	aal = append(aal, &addressAmount{callerAddr.String(), senderAmountWithSign, actionType})
-	if dst != "" {
-		aal = append(aal, &addressAmount{dst, dstAmountWithSign, actionType})
-	}
-	return aal, nil
+	return addressAmountList{
+		&addressAmount{
+			senderAddr:   callerAddr.String(),
+			dstAddr:      address.RewardingPoolAddr,
+			senderAmount: "-" + fee.String(),
+			dstAmount:    fee.String(),
+			actionType:   iotextypes.TransactionLogType_GAS_FEE.String(),
+		}, &addressAmount{
+			senderAddr:   callerAddr.String(),
+			dstAddr:      dst,
+			senderAmount: senderAmountWithSign,
+			dstAmount:    dstAmountWithSign,
+			actionType:   actionType,
+		},
+	}, nil
 }
