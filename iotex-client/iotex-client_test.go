@@ -165,12 +165,12 @@ func testActions() []*iotextypes.Action {
 	signature, _ := hex.DecodeString("010203040506070809")
 	return []*iotextypes.Action{
 		{
-			Core:         &iotextypes.ActionCore{
+			Core: &iotextypes.ActionCore{
 				Version:  1,
 				Nonce:    10,
 				GasLimit: 20010,
 				GasPrice: "11000000000000000000",
-				Action:   &iotextypes.ActionCore_Transfer{
+				Action: &iotextypes.ActionCore_Transfer{
 					Transfer: &iotextypes.Transfer{
 						Amount:    "1010000000000000000000",
 						Recipient: "io1jh0ekmccywfkmj7e8qsuzsupnlk3w5337hjjg2",
@@ -252,6 +252,22 @@ func newMockServer(t *testing.T) (svr iotexapi.APIServiceServer, cli IoTexClient
 			}, nil
 		}).
 		AnyTimes()
+	service.EXPECT().
+		GetReceiptByAction(gomock.Any(), gomock.AssignableToTypeOf(&iotexapi.GetReceiptByActionRequest{})).
+		DoAndReturn(func(ctx context.Context, req *iotexapi.GetReceiptByActionRequest) (*iotexapi.GetReceiptByActionResponse, error) {
+			return &iotexapi.GetReceiptByActionResponse{
+				ReceiptInfo: &iotexapi.ReceiptInfo{
+					Receipt: &iotextypes.Receipt{
+						Status:          1,
+						BlkHeight:       1,
+						ActHash:         hash.ZeroHash256[:],
+						GasConsumed:     1,
+						ContractAddress: "test",
+					},
+					BlkHash: "",
+				},
+			}, nil
+		})
 
 	topics := []hash.Hash256{
 		hash.Hash256b([]byte("test")),

@@ -202,8 +202,13 @@ func (c *grpcIoTexClient) GetTransactions(ctx context.Context, height int64) (re
 			ret = append(ret, transaction)
 		} else if c.cfg.KeepNoneTxAction {
 			ret = append(ret, c.genNoneTxActTransaction(h, actionMap[h]))
+		} else if rec, err := c.client.GetReceiptByAction(ctx, &iotexapi.GetReceiptByActionRequest{ActionHash: h}); err == nil && rec.ReceiptInfo.Receipt.GetStatus() != 1 {
+			transaction, err := c.packActionToTransaction(actionMap[h], h, StatusFail)
+			if err != nil {
+				continue
+			}
+			ret = append(ret, transaction)
 		}
-
 	}
 	ret = fillIndex(ret)
 	return
@@ -432,19 +437,31 @@ func (c *grpcIoTexClient) GetBlockTransaction(ctx context.Context, actionHash st
 }
 
 func (c *grpcIoTexClient) getBlockTransaction(ctx context.Context, actionHash string) (ret *types.Transaction, err error) {
-		request := &iotexapi.GetTransactionLogByActionHashRequest{
-			ActionHash: actionHash,
-		}
+	request := &iotexapi.GetTransactionLogByActionHashRequest{
+		ActionHash: actionHash,
+	}
 
-		resp, err := c.client.GetTransactionLogByActionHash(ctx, request)
-		if err != nil {
-			return nil, err
-		}
-		if resp.TransactionLog == nil {
-			return nil, errors.New("not found")
-		}
-		ret = c.packTransaction(hex.EncodeToString(resp.TransactionLog.ActionHash), resp.TransactionLog.Transactions)
-		return
+	resp, err := c.client.GetTransactionLogByActionHash(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+	if resp.TransactionLog == nil {
+		return nil, errors.New("not found")
+	}
+	ret = c.packTransaction(hex.EncodeToString(resp.TransactionLog.ActionHash), resp.TransactionLog.Transactions)
+
+	rec, err := c.client.GetReceiptByAction(context.Background(), &iotexapi.GetReceiptByActionRequest{ActionHash: actionHash})
+	if err == nil && rec.ReceiptInfo.Receipt.GetStatus() != 1 {
+		oprs := c.covertAddressAmountsToOperations(addressAmountList{&addressAmount{
+			senderAddr:   rec.ReceiptInfo.Receipt.ContractAddress,
+			dstAddr:      address.RewardingPoolAddr,
+			senderAmount: "-" + strconv.Itoa(int(rec.ReceiptInfo.Receipt.GasConsumed)),
+			dstAmount:    strconv.Itoa(int(rec.ReceiptInfo.Receipt.GasConsumed)),
+			actionType:   iotextypes.TransactionLogType_GAS_FEE.String(),
+		}}, StatusFail)
+		ret.Operations = append(ret.Operations, oprs...)
+	}
+	return
 }
 
 func (c *grpcIoTexClient) GetMemPool(ctx context.Context, actionHashes []string) (ret []*types.TransactionIdentifier, err error) {
@@ -493,7 +510,7 @@ func (c *grpcIoTexClient) getMemPoolTransaction(ctx context.Context, h string) (
 	if err != nil {
 		return nil, err
 	}
-	if acts.Actions == nil || len(acts.Actions) < 1{
+	if acts.Actions == nil || len(acts.Actions) < 1 {
 		return nil, errors.New("action not found")
 	}
 	return c.packActionToTransaction(acts.Actions[0], h, StatusSuccess)
