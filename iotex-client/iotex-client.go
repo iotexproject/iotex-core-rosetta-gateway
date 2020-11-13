@@ -510,6 +510,7 @@ func (c *grpcIoTexClient) getMemPoolTransaction(ctx context.Context, h string) (
 	if err != nil {
 		return nil, err
 	}
+
 	if acts.Actions == nil || len(acts.Actions) < 1 {
 		return nil, errors.New("action not found")
 	}
