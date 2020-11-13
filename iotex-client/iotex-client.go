@@ -11,6 +11,7 @@ import (
 	"crypto/tls"
 	"encoding/hex"
 	"log"
+	"math/big"
 	"sync"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
@@ -70,6 +71,8 @@ type (
 		GetBlockTransaction(ctx context.Context, actionHash string) (*types.Transaction, error)
 
 		GetMemPool(ctx context.Context, actionHashes []string) ([]*types.TransactionIdentifier, error)
+
+		GetMemPoolTransaction(ctx context.Context, h string) (*types.Transaction, error)
 	}
 )
 
@@ -82,6 +85,17 @@ type (
 		client   iotexapi.APIServiceClient
 		cfg      *config.Config
 	}
+)
+
+type (
+	addressAmount struct {
+		senderAddr   string
+		dstAddr      string
+		senderAmount string
+		dstAmount    string
+		actionType   string
+	}
+	addressAmountList []*addressAmount
 )
 
 // NewIoTexClient returns an implementation of IoTexClient
@@ -460,4 +474,147 @@ func (c *grpcIoTexClient) getMemPool(ctx context.Context, actionHashes []string)
 	}
 
 	return
+}
+
+func (c *grpcIoTexClient) GetMemPoolTransaction(ctx context.Context, h string) (ret *types.Transaction, err error) {
+	if err = c.connect(); err != nil {
+		return
+	}
+	return c.getMemPoolTransaction(ctx, h)
+}
+
+func (c *grpcIoTexClient) getMemPoolTransaction(ctx context.Context, h string) (ret *types.Transaction, err error) {
+	request := &iotexapi.GetActPoolActionsRequest{
+		ActionHashes: []string{h},
+	}
+
+	acts, err := c.client.GetActPoolActions(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+	if acts.Actions == nil || len(acts.Actions) < 1{
+		return nil, errors.New("action not found")
+	}
+	return c.packActionToTransaction(acts.Actions[0], h, StatusSuccess)
+}
+
+func (c *grpcIoTexClient) packActionToTransaction(act *iotextypes.Action, h, status string) (ret *types.Transaction, err error) {
+	var aal addressAmountList
+	aal, err = packActionToAddressAmounts(act)
+	if err != nil {
+		return
+	}
+
+	ret = &types.Transaction{
+		TransactionIdentifier: &types.TransactionIdentifier{Hash: h},
+		Operations:            c.covertAddressAmountsToOperations(aal, status),
+	}
+	return
+}
+
+func (c *grpcIoTexClient) covertAddressAmountsToOperations(amountList addressAmountList, status string) (ret []*types.Operation) {
+	var index int64 = 0
+	for _, aa := range amountList {
+		sender := c.genOperation(aa.senderAddr, status, aa.senderAmount, aa.actionType, index)
+		index++
+		dst := c.genOperation(aa.dstAddr, status, aa.dstAmount, aa.actionType, index)
+		index++
+		ret = append(ret, sender, dst)
+	}
+	return ret
+}
+
+func (c *grpcIoTexClient) genOperation(addr, status, amount, actType string, index int64) *types.Operation {
+	return &types.Operation{
+		OperationIdentifier: &types.OperationIdentifier{
+			Index:        index,
+			NetworkIndex: nil,
+		},
+		RelatedOperations: nil,
+		Type:              actType,
+		Status:            status,
+		Account: &types.AccountIdentifier{
+			Address:    addr,
+			SubAccount: nil,
+			Metadata:   nil,
+		},
+		Amount: &types.Amount{
+			Value: amount,
+			Currency: &types.Currency{
+				Symbol:   c.cfg.Currency.Symbol,
+				Decimals: c.cfg.Currency.Decimals,
+				Metadata: nil,
+			},
+			Metadata: nil,
+		},
+		Metadata: nil,
+	}
+}
+
+func packActionToAddressAmounts(act *iotextypes.Action) (aal addressAmountList, err error) {
+	amount := "0"
+	senderSign := "-"
+	actionType := ""
+	dst := ""
+	callerAddr, err := getCaller(act)
+	if err != nil {
+		return aal, err
+	}
+
+	switch {
+	case act.GetCore().GetTransfer() != nil:
+		actionType = iotextypes.TransactionLogType_NATIVE_TRANSFER.String()
+		amount = act.GetCore().GetTransfer().GetAmount()
+		dst = act.GetCore().GetTransfer().GetRecipient()
+	case act.GetCore().GetDepositToRewardingFund() != nil:
+		actionType = iotextypes.TransactionLogType_DEPOSIT_TO_REWARDING_FUND.String()
+		amount = act.GetCore().GetDepositToRewardingFund().GetAmount()
+		dst = address.RewardingPoolAddr
+	case act.GetCore().GetClaimFromRewardingFund() != nil:
+		actionType = iotextypes.TransactionLogType_CLAIM_FROM_REWARDING_FUND.String()
+		amount = act.GetCore().GetClaimFromRewardingFund().GetAmount()
+		senderSign = "+"
+		dst = address.RewardingPoolAddr
+	case act.GetCore().GetStakeAddDeposit() != nil:
+		actionType = iotextypes.TransactionLogType_DEPOSIT_TO_BUCKET.String()
+		amount = act.GetCore().GetStakeAddDeposit().GetAmount()
+		dst = address.StakingBucketPoolAddr
+	case act.GetCore().GetStakeCreate() != nil:
+		actionType = iotextypes.TransactionLogType_CREATE_BUCKET.String()
+		amount = act.GetCore().GetStakeCreate().GetStakedAmount()
+		dst = address.StakingBucketPoolAddr
+	case act.GetCore().GetCandidateRegister() != nil:
+		actionType = iotextypes.TransactionLogType_CANDIDATE_SELF_STAKE.String()
+		amount = act.GetCore().GetCandidateRegister().GetStakedAmount()
+		dst = address.StakingBucketPoolAddr
+	case act.GetCore().GetExecution() != nil:
+		actionType = iotextypes.TransactionLogType_IN_CONTRACT_TRANSFER.String()
+		amount = act.GetCore().GetExecution().GetAmount()
+		dst = address.StakingBucketPoolAddr
+	}
+
+	senderAmountWithSign := amount
+	dstAmountWithSign := amount
+	if senderSign == "-" {
+		senderAmountWithSign = senderSign + amount
+	} else {
+		dstAmountWithSign = "-" + amount
+	}
+
+	fee := new(big.Int).SetUint64(act.GetCore().GetGasLimit())
+	return addressAmountList{
+		&addressAmount{
+			senderAddr:   callerAddr.String(),
+			dstAddr:      address.RewardingPoolAddr,
+			senderAmount: "-" + fee.String(),
+			dstAmount:    fee.String(),
+			actionType:   iotextypes.TransactionLogType_GAS_FEE.String(),
+		}, &addressAmount{
+			senderAddr:   callerAddr.String(),
+			dstAddr:      dst,
+			senderAmount: senderAmountWithSign,
+			dstAmount:    dstAmountWithSign,
+			actionType:   actionType,
+		},
+	}, nil
 }

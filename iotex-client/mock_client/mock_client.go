@@ -245,3 +245,18 @@ func (mr *MockIoTexClientMockRecorder) GetMemPool(ctx, actionHashes interface{})
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMemPool", reflect.TypeOf((*MockIoTexClient)(nil).GetMemPool), ctx, actionHashes)
 }
+
+// GetMemPoolTransaction mocks base method
+func (m *MockIoTexClient) GetMemPoolTransaction(ctx context.Context, h string) (*types.Transaction, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMemPoolTransaction", ctx, h)
+	ret0, _ := ret[0].(*types.Transaction)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetMemPoolTransaction indicates an expected call of GetMemPoolTransaction
+func (mr *MockIoTexClientMockRecorder) GetMemPoolTransaction(ctx, actionHash interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMemPoolTransaction", reflect.TypeOf((*MockIoTexClient)(nil).GetMemPoolTransaction), ctx, actionHash)
+}
