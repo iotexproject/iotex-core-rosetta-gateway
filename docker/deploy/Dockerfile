@@ -31,11 +31,11 @@ COPY --from=build /etc/iotex/meta/poll.tar.gz /etc/iotex/meta
 RUN cd /etc/iotex/meta && \
     tar -xzf poll.tar.gz
 
-VOLUME /data
-WORKDIR /data
+VOLUME /rosetta
+WORKDIR /rosetta
 
-ENV ConfigPath=/data/etc/iotex-rosetta/config.yaml
-CMD iotex-server -config-path=/data/etc/iotex/config_override.yaml -genesis-path=/data/etc/iotex/genesis.yaml -plugin=gateway & iotex-core-rosetta-gateway
+ENV ConfigPath=/rosetta/etc/iotex-rosetta/config.yaml
+CMD iotex-server -config-path=/rosetta/etc/iotex/config_override.yaml -genesis-path=/rosetta/etc/iotex/genesis.yaml -plugin=gateway & iotex-core-rosetta-gateway
 
 EXPOSE 8080/tcp
 EXPOSE 14014/tcp

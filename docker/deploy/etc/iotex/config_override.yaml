@@ -10,10 +10,12 @@ network:
 chain:
   # If you are a delegate, make sure producerPrivKey is the key for the operator address you have registered.
   # producerPrivKey: SET YOUR PRIVATE KEY HERE (e.g., 96f0aa5e8523d6a28dc35c927274be4e931e74eaa720b418735debfcbfe712b8)
-  chainDBPath: "/data/chain.db"
-  trieDBPath: "/data/trie.db"
-  indexDBPath: "/data/index.db"
-  candidateIndexDBPath: "/data/candidate.index.db"
+  chainDBPath: "/rosetta/data/chain.db"
+  trieDBPath: "/rosetta/data/trie.db"
+  indexDBPath: "/rosetta/data/index.db"
+  bloomfilterIndexDBPath: "/rosetta/data/bloomfilter.index.db"
+  candidateIndexDBPath: "/rosetta/data/candidate.index.db"
+  stakingIndexDBPath: "/rosetta/data/staking.index.db"
   maxCacheSize: 1000
   committee:
     gravityChainAPIs:
@@ -35,7 +37,7 @@ api:
 
 system:
   httpStatsPort: 8089
-  systemLogDBPath: "/data/systemlog.db"
+  systemLogDBPath: "/rosetta/data/systemlog.db"
 
 consensus:
   scheme: ROLLDPOS
@@ -47,7 +49,7 @@ consensus:
       acceptProposalEndorsementTTL: 2s
       acceptLockEndorsementTTL: 2s
     delay: 10s
-    consensusDBPath: "/data/consensus.db"
+    consensusDBPath: "/rosetta/data/consensus.db"
 
 blockSync:
   bufferSize: 400
@@ -61,5 +63,5 @@ log:
     disableStacktrace: true
     outputPaths: ["stderr", "stdout"]
     errorOutputPaths: ["stderr"]
-  stderrRedirectFile: "/data/s.log"
+  stderrRedirectFile: "/rosetta/data/s.log"
   stdLogRedirect: true

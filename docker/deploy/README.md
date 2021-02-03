@@ -22,12 +22,12 @@ You can also find the built image here: `iotex/iotex-core-rosetta:latest`
 
 To run the docker image in online mode:
 ```bash
-docker run -v {YOUR_LOCAL_DATA_PATH}:/data -p 8080:8080 -p 4689:4689 -it iotex/iotex-core-rosetta
+docker run -d -v {YOUR_LOCAL_DATA_PATH}:/rosetta --name rosetta -p 8080:8080 -p 4689:4689 -it iotex/iotex-core-rosetta
 ```
 
 To run in offline mode which runs gateway only in container without chain node:
 ```bash
-docker run -v {YOUR_LOCAL_DATA_PATH}:/data -p 8080:8080 -it iotex/iotex-core-rosetta iotex-core-rosetta-gateway
+docker run -d -v {YOUR_LOCAL_DATA_PATH}:/rosetta --name rosetta -p 8080:8080 -it iotex/iotex-core-rosetta iotex-core-rosetta-gateway
 ```
 
 Once your node starts syncing, you can check with `rosetta-cli@v0.4.1` with following command:
