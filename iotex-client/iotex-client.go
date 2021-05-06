@@ -561,36 +561,37 @@ func packActionToAddressAmounts(act *iotextypes.Action) (aal addressAmountList, 
 		return aal, err
 	}
 
+	core := act.GetCore()
 	switch {
-	case act.GetCore().GetTransfer() != nil:
+	case core.GetTransfer() != nil:
 		actionType = iotextypes.TransactionLogType_NATIVE_TRANSFER.String()
-		amount = act.GetCore().GetTransfer().GetAmount()
-		dst = act.GetCore().GetTransfer().GetRecipient()
-	case act.GetCore().GetDepositToRewardingFund() != nil:
+		amount = core.GetTransfer().GetAmount()
+		dst = core.GetTransfer().GetRecipient()
+	case core.GetDepositToRewardingFund() != nil:
 		actionType = iotextypes.TransactionLogType_DEPOSIT_TO_REWARDING_FUND.String()
-		amount = act.GetCore().GetDepositToRewardingFund().GetAmount()
+		amount = core.GetDepositToRewardingFund().GetAmount()
 		dst = address.RewardingPoolAddr
-	case act.GetCore().GetClaimFromRewardingFund() != nil:
+	case core.GetClaimFromRewardingFund() != nil:
 		actionType = iotextypes.TransactionLogType_CLAIM_FROM_REWARDING_FUND.String()
-		amount = act.GetCore().GetClaimFromRewardingFund().GetAmount()
+		amount = core.GetClaimFromRewardingFund().GetAmount()
 		senderSign = "+"
 		dst = address.RewardingPoolAddr
-	case act.GetCore().GetStakeAddDeposit() != nil:
+	case core.GetStakeAddDeposit() != nil:
 		actionType = iotextypes.TransactionLogType_DEPOSIT_TO_BUCKET.String()
-		amount = act.GetCore().GetStakeAddDeposit().GetAmount()
+		amount = core.GetStakeAddDeposit().GetAmount()
 		dst = address.StakingBucketPoolAddr
-	case act.GetCore().GetStakeCreate() != nil:
+	case core.GetStakeCreate() != nil:
 		actionType = iotextypes.TransactionLogType_CREATE_BUCKET.String()
-		amount = act.GetCore().GetStakeCreate().GetStakedAmount()
+		amount = core.GetStakeCreate().GetStakedAmount()
 		dst = address.StakingBucketPoolAddr
-	case act.GetCore().GetCandidateRegister() != nil:
+	case core.GetCandidateRegister() != nil:
 		actionType = iotextypes.TransactionLogType_CANDIDATE_SELF_STAKE.String()
-		amount = act.GetCore().GetCandidateRegister().GetStakedAmount()
+		amount = core.GetCandidateRegister().GetStakedAmount()
 		dst = address.StakingBucketPoolAddr
-	case act.GetCore().GetExecution() != nil:
+	case core.GetExecution() != nil:
 		actionType = iotextypes.TransactionLogType_IN_CONTRACT_TRANSFER.String()
-		amount = act.GetCore().GetExecution().GetAmount()
-		dst = address.StakingBucketPoolAddr
+		amount = core.GetExecution().GetAmount()
+		dst = core.GetExecution().GetContract()
 	}
 
 	senderAmountWithSign := amount
@@ -601,7 +602,7 @@ func packActionToAddressAmounts(act *iotextypes.Action) (aal addressAmountList, 
 		dstAmountWithSign = "-" + amount
 	}
 
-	fee := new(big.Int).SetUint64(act.GetCore().GetGasLimit())
+	fee := new(big.Int).SetUint64(core.GetGasLimit())
 	return addressAmountList{
 		&addressAmount{
 			senderAddr:   callerAddr.String(),
