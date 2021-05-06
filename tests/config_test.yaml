@@ -2,7 +2,9 @@ chain:
   chainDBPath: chain.db
   trieDBPath: trie.db
   indexDBPath: index.db
+  bloomfilterIndexDBPath: bloomfilter.index.db
   candidateIndexDBPath: candidate.index.db
+  stakingIndexDBPath: staking.index.db
   gravityChainDB:
     dbPath: poll.db
   enableSystemLog: true

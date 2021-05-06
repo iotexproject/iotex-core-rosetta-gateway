@@ -1,6 +1,7 @@
 network_identifier:
   blockchain: IoTeX
   network: testnet
+  evmNetworkID: 4690
 currency:
   symbol: IOTX
   decimals: 18

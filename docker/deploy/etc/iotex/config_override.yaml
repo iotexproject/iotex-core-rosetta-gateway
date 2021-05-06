@@ -13,7 +13,9 @@ chain:
   chainDBPath: "/data/chain.db"
   trieDBPath: "/data/trie.db"
   indexDBPath: "/data/index.db"
+  bloomfilterIndexDBPath: "/data/bloomfilter.index.db"
   candidateIndexDBPath: "/data/candidate.index.db"
+  stakingIndexDBPath: "/data/staking.index.db"
   maxCacheSize: 1000
   committee:
     gravityChainAPIs:

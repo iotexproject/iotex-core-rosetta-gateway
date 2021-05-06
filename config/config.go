@@ -13,8 +13,9 @@ import (
 
 type (
 	NetworkIdentifier struct {
-		Blockchain string `yaml:"blockchain"`
-		Network    string `yaml:"network"`
+		Blockchain   string `yaml:"blockchain"`
+		Network      string `yaml:"network"`
+		EvmNetworkID uint32 `yaml:"evmNetworkID"`
 	}
 	Currency struct {
 		Symbol   string `yaml:"symbol"`
