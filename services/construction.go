@@ -139,7 +139,9 @@ func (s *constructionAPIService) ConstructionDerive(
 		return nil, terr
 	}
 	return &types.ConstructionDeriveResponse{
-		Address: addr.String(),
+		AccountIdentifier: &types.AccountIdentifier{
+			Address: addr.String(),
+		},
 	}, nil
 }
 
@@ -395,7 +397,11 @@ func (s *constructionAPIService) ConstructionParse(
 		Metadata:   meta,
 	}
 	if request.Signed {
-		resp.Signers = []string{sender}
+		resp.AccountIdentifierSigners = []*types.AccountIdentifier{
+			&types.AccountIdentifier{
+				Address: sender,
+			},
+		}
 	}
 	return resp, nil
 }
@@ -431,8 +437,10 @@ func (s *constructionAPIService) ConstructionPayloads(
 	return &types.ConstructionPayloadsResponse{
 		UnsignedTransaction: unsignedTx,
 		Payloads: []*types.SigningPayload{
-			&types.SigningPayload{
-				Address:       request.Operations[0].Account.Address,
+			{
+				AccountIdentifier: &types.AccountIdentifier{
+					Address: request.Operations[0].Account.Address,
+				},
 				Bytes:         h[:],
 				SignatureType: SignatureType,
 			},

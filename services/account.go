@@ -36,9 +36,18 @@ func (s *accountAPIService) AccountBalance(
 		return nil, terr
 	}
 	// TODO fix this when we have archive mode
-	resp, err := s.client.GetAccount(ctx, 0, request.AccountIdentifier.Address)
+	addr := ConvertToIotexAddress(request.AccountIdentifier.Address)
+	resp, err := s.client.GetAccount(ctx, 0, addr)
 	if err != nil {
 		return nil, ErrUnableToGetAccount
 	}
 	return resp, nil
+}
+
+// AccountCoins implements the /account/coins endpoint.
+func (s *accountAPIService) AccountCoins(
+	context.Context,
+	*types.AccountCoinsRequest,
+) (*types.AccountCoinsResponse, *types.Error) {
+	return nil, nil
 }

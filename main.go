@@ -35,6 +35,9 @@ func NewBlockchainRouter(client ic.IoTexClient) (http.Handler, error) {
 				Network:    client.GetConfig().NetworkIdentifier.Network,
 			},
 		},
+		[]string{},
+		false,
+		"",
 	)
 	if err != nil {
 		return nil, err

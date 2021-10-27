@@ -34,7 +34,7 @@ func TestBlockAPIService_Block(t *testing.T) {
 						Index: int64(0),
 					},
 					Type:    "PAYMENT",
-					Status:  "SUCCESS",
+					Status:  types.String("SUCCESS"),
 					Account: account,
 					Amount:  amount,
 				},
@@ -48,7 +48,7 @@ func TestBlockAPIService_Block(t *testing.T) {
 						},
 					},
 					Type:    "PAYMENT",
-					Status:  "SUCCESS",
+					Status:  types.String("SUCCESS"),
 					Account: account,
 					Amount:  amount,
 				},
@@ -119,7 +119,7 @@ func TestBlockAPIService_BlockTransaction(t *testing.T) {
 						Index: int64(0),
 					},
 					Type:    "PAYMENT",
-					Status:  "SUCCESS",
+					Status:  types.String("SUCCESS"),
 					Account: account,
 					Amount:  amount,
 				},
@@ -133,7 +133,7 @@ func TestBlockAPIService_BlockTransaction(t *testing.T) {
 						},
 					},
 					Type:    "PAYMENT",
-					Status:  "SUCCESS",
+					Status:  types.String("SUCCESS"),
 					Account: account,
 					Amount:  amount,
 				},
@@ -159,8 +159,8 @@ func TestBlockAPIService_BlockTransaction(t *testing.T) {
 		AnyTimes()
 
 	resp, typErr := clt.BlockTransaction(context.Background(), &types.BlockTransactionRequest{
-		NetworkIdentifier: networkIdentifier,
-		BlockIdentifier: blockIdentifier,
+		NetworkIdentifier:     networkIdentifier,
+		BlockIdentifier:       blockIdentifier,
 		TransactionIdentifier: tx.TransactionIdentifier,
 	})
 	require.Nil(typErr)

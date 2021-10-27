@@ -2,16 +2,17 @@ package services
 
 import (
 	"context"
+	"testing"
+
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/golang/mock/gomock"
 	"github.com/iotexproject/iotex-core-rosetta-gateway/iotex-client/mock_client"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestMemPoolAPIService_Mempool(t *testing.T) {
 	var (
-		cfg     = testConfig()
+		cfg               = testConfig()
 		networkIdentifier = &types.NetworkIdentifier{
 			Blockchain: "IoTeX",
 			Network:    "testnet",
@@ -38,7 +39,7 @@ func TestMemPoolAPIService_Mempool(t *testing.T) {
 
 func TestMemPoolAPIService_MempoolTransaction(t *testing.T) {
 	var (
-		cfg     = testConfig()
+		cfg               = testConfig()
 		networkIdentifier = &types.NetworkIdentifier{
 			Blockchain: "IoTeX",
 			Network:    "testnet",
@@ -63,7 +64,7 @@ func TestMemPoolAPIService_MempoolTransaction(t *testing.T) {
 						Index: int64(0),
 					},
 					Type:    "PAYMENT",
-					Status:  "SUCCESS",
+					Status:  types.String("SUCCESS"),
 					Account: account,
 					Amount:  amount,
 				},
@@ -77,7 +78,7 @@ func TestMemPoolAPIService_MempoolTransaction(t *testing.T) {
 						},
 					},
 					Type:    "PAYMENT",
-					Status:  "SUCCESS",
+					Status:  types.String("SUCCESS"),
 					Account: account,
 					Amount:  amount,
 				},
@@ -97,7 +98,7 @@ func TestMemPoolAPIService_MempoolTransaction(t *testing.T) {
 		AnyTimes()
 
 	resp, typErr := clt.MempoolTransaction(context.Background(), &types.MempoolTransactionRequest{
-		NetworkIdentifier: networkIdentifier,
+		NetworkIdentifier:     networkIdentifier,
 		TransactionIdentifier: tis,
 	})
 

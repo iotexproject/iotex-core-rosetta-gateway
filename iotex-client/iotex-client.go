@@ -374,7 +374,7 @@ func (c *grpcIoTexClient) covertToOperations(s *iotextypes.TransactionLog_Transa
 			},
 			RelatedOperations: nil,
 			Type:              s.GetType().String(),
-			Status:            StatusSuccess,
+			Status:            types.String(StatusSuccess),
 			Account: &types.AccountIdentifier{
 				Address:    s.GetSender(),
 				SubAccount: nil,
@@ -401,7 +401,7 @@ func (c *grpcIoTexClient) covertToOperations(s *iotextypes.TransactionLog_Transa
 			},
 			RelatedOperations: nil,
 			Type:              s.GetType().String(),
-			Status:            StatusSuccess,
+			Status:            types.String(StatusSuccess),
 			Account: &types.AccountIdentifier{
 				Address:    s.GetRecipient(),
 				SubAccount: nil,
@@ -431,19 +431,19 @@ func (c *grpcIoTexClient) GetBlockTransaction(ctx context.Context, actionHash st
 }
 
 func (c *grpcIoTexClient) getBlockTransaction(ctx context.Context, actionHash string) (ret *types.Transaction, err error) {
-		request := &iotexapi.GetTransactionLogByActionHashRequest{
-			ActionHash: actionHash,
-		}
+	request := &iotexapi.GetTransactionLogByActionHashRequest{
+		ActionHash: actionHash,
+	}
 
-		resp, err := c.client.GetTransactionLogByActionHash(ctx, request)
-		if err != nil {
-			return nil, err
-		}
-		if resp.TransactionLog == nil {
-			return nil, errors.New("not found")
-		}
-		ret = c.packTransaction(hex.EncodeToString(resp.TransactionLog.ActionHash), resp.TransactionLog.Transactions)
-		return
+	resp, err := c.client.GetTransactionLogByActionHash(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+	if resp.TransactionLog == nil {
+		return nil, errors.New("not found")
+	}
+	ret = c.packTransaction(hex.EncodeToString(resp.TransactionLog.ActionHash), resp.TransactionLog.Transactions)
+	return
 }
 
 func (c *grpcIoTexClient) GetMemPool(ctx context.Context, actionHashes []string) (ret []*types.TransactionIdentifier, err error) {
@@ -492,7 +492,7 @@ func (c *grpcIoTexClient) getMemPoolTransaction(ctx context.Context, h string) (
 	if err != nil {
 		return nil, err
 	}
-	if acts.Actions == nil || len(acts.Actions) < 1{
+	if acts.Actions == nil || len(acts.Actions) < 1 {
 		return nil, errors.New("action not found")
 	}
 	return c.packActionToTransaction(acts.Actions[0], h, StatusSuccess)
@@ -532,7 +532,7 @@ func (c *grpcIoTexClient) genOperation(addr, status, amount, actType string, ind
 		},
 		RelatedOperations: nil,
 		Type:              actType,
-		Status:            status,
+		Status:            types.String(status),
 		Account: &types.AccountIdentifier{
 			Address:    addr,
 			SubAccount: nil,
