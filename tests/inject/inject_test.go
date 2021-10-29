@@ -7,7 +7,6 @@
 package inject
 
 import (
-	"bytes"
 	"context"
 	"encoding/hex"
 	"fmt"
@@ -82,6 +81,7 @@ func TestCandidateRegister(t *testing.T) {
 		7, false, nil, gasLimit, gasPrice)
 	require.NoError(err)
 	sk, err := crypto.HexStringToPrivateKey(privateKey2)
+	require.NoError(err)
 	bd := &action.EnvelopeBuilder{}
 	elp := bd.SetNonce(getacc.AccountMeta.PendingNonce).
 		SetGasPrice(gasPrice).
@@ -118,6 +118,7 @@ func stakeCreate(t *testing.T, pri, addr string, autostake bool) {
 	cr, err := action.NewCreateStake(getacc.AccountMeta.PendingNonce, "xxxx", "1200100000000000000000000", 0, autostake, nil, gasLimit, gasPrice)
 	require.NoError(err)
 	sk, err := crypto.HexStringToPrivateKey(pri)
+	require.NoError(err)
 	bd := &action.EnvelopeBuilder{}
 	elp := bd.SetNonce(getacc.AccountMeta.PendingNonce).
 		SetGasPrice(gasPrice).
@@ -149,6 +150,7 @@ func TestStakeAddDeposit(t *testing.T) {
 		gasLimit, gasPrice)
 	require.NoError(err)
 	sk, err := crypto.HexStringToPrivateKey(privateKey2)
+	require.NoError(err)
 	bd := &action.EnvelopeBuilder{}
 	elp := bd.SetNonce(getacc.AccountMeta.PendingNonce).
 		SetGasPrice(gasPrice).
@@ -181,6 +183,7 @@ func TestStakeUnstake(t *testing.T) {
 		gasLimit, gasPrice)
 	require.NoError(err)
 	sk, err := crypto.HexStringToPrivateKey(privateKey)
+	require.NoError(err)
 	bd := &action.EnvelopeBuilder{}
 	elp := bd.SetNonce(getacc.AccountMeta.PendingNonce).
 		SetGasPrice(gasPrice).
@@ -211,6 +214,7 @@ func TestStakeWithdraw(t *testing.T) {
 	cr, err := action.NewWithdrawStake(getacc.AccountMeta.PendingNonce, 1, nil, gasLimit, gasPrice)
 	require.NoError(err)
 	sk, err := crypto.HexStringToPrivateKey(privateKey)
+	require.NoError(err)
 	bd := &action.EnvelopeBuilder{}
 	elp := bd.SetNonce(getacc.AccountMeta.PendingNonce).
 		SetGasPrice(gasPrice).
@@ -253,39 +257,6 @@ func TestInjectTransferUseExecution(t *testing.T) {
 	})
 	require.NoError(err)
 	checkHash(ret.ActionHash, t)
-}
-
-func TestGetImplicitLog(t *testing.T) {
-	InContractTransfer := common.Hash{}
-	BucketWithdrawAmount := hash.BytesToHash256([]byte("withdrawAmount"))
-	fmt.Println("TestGetImplicitLog")
-	require := require.New(t)
-	conn, err := grpc.Dial(endpoint, grpc.WithInsecure())
-	require.NoError(err)
-	defer conn.Close()
-	acc, err := account.HexStringToAccount(privateKey)
-	require.NoError(err)
-	c := iotex.NewAuthedClient(iotexapi.NewAPIServiceClient(conn), acc)
-	for i := uint64(1); i < 120; i++ {
-		ret, err := c.API().GetImplicitTransferLogByBlockHeight(context.Background(),
-			&iotexapi.GetImplicitTransferLogByBlockHeightRequest{
-				BlockHeight: i})
-		if err != nil {
-			continue
-		}
-		for _, trans := range ret.GetBlockImplicitTransferLog().GetImplicitTransferLog() {
-			for _, t := range trans.GetTransactions() {
-				switch {
-				case bytes.Compare(t.GetTopic(), InContractTransfer[:]) == 0:
-					fmt.Println(i, "execution", t.Sender, t.Recipient, t.Amount)
-				case bytes.Compare(t.GetTopic(), BucketWithdrawAmount[:]) == 0:
-					fmt.Println(i, "stakewithdraw", t.Sender, t.Recipient, t.Amount)
-				default:
-					fmt.Println(i, "other")
-				}
-			}
-		}
-	}
 }
 
 func injectMultisend(t *testing.T) {
@@ -391,6 +362,7 @@ func checkHash(h string, t *testing.T) {
 	require.NoError(err)
 	c := iotex.NewReadOnlyClient(iotexapi.NewAPIServiceClient(conn))
 	receiptResponse, err := c.GetReceipt(ha).Call(context.Background())
+	require.NoError(err)
 	r := receiptResponse.GetReceiptInfo().GetReceipt()
 	s := r.GetStatus()
 	fmt.Println("status:", s)
