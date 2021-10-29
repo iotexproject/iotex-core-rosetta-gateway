@@ -1,4 +1,4 @@
-FROM golang:1.14-buster
+FROM golang:1.17-buster
 ENV GO111MODULE=on
 
 ARG ROSETTA_CLI_RELEASE="0.7.1"
