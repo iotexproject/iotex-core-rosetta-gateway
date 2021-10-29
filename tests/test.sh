@@ -68,6 +68,7 @@ function startServer(){
   sleep 3
 
   printf "${GRN}### Starting the Rosetta gateway...${OFF}\n"
+  ConfigPath=$ROSETTA_PATH/tests/gateway_config.yaml
   GW="iotex-core-rosetta-gateway"
   ${GW} &
   sleep 3
