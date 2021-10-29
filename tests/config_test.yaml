@@ -11,3 +11,4 @@ chain:
   enableSystemLog: true
 system:
   systemLogDBPath: systemlog.db
+  httpStatsPort: 8081
