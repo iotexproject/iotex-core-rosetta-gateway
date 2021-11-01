@@ -25,7 +25,7 @@ function constructionCheckTest() {
   SEND_TO=$(grep -o "Waiting for funds on \w\+" rosetta-cli.log | rev | cut -d' ' -f 1 | rev)
   cd $ROSETTA_PATH/tests/inject
   printf "${GRN}### Starting transfer, send to: ${SEND_TO}${OFF}\n"
-  ROSETTA_SEND_TO=$SEND_TO go test -test.run TestInjectTransfer10IOTX
+  ROSETTA_SEND_TO=$SEND_TO go test -test.run TestInjectTransfer10IOTX -timeout 99999s
   printf "${GRN}### Finished transfer funds${OFF}\n"
 
   sleep 30
