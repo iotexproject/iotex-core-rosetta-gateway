@@ -22,10 +22,12 @@ function constructionCheckTest() {
   sleep 1
 
   ## TODO change this to sub process, sleep 1s, may not be right
+  #  SEND_TO=$(grep -o "Did you forget to fund? \[\w\+\]" rosetta-cli.log | rev | cut -d ']' -f2 | cut -d '[' -f1 | rev | head -n1)
+
   SEND_TO=$(grep -o "Waiting for funds on \w\+" rosetta-cli.log | rev | cut -d' ' -f 1 | rev)
   cd $ROSETTA_PATH/tests/inject
   printf "${GRN}### Starting transfer, send to: ${SEND_TO}${OFF}\n"
-  ROSETTA_SEND_TO=$SEND_TO go test -test.run TestInjectTransfer10IOTX -timeout 99999s
+  ROSETTA_SEND_TO=$SEND_TO go test -test.run TestInjectTransfer10IOTX
   printf "${GRN}### Finished transfer funds${OFF}\n"
 
   sleep 30
