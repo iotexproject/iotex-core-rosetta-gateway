@@ -81,12 +81,12 @@ printf "${GRN}### Start testing${OFF}\n"
 startServer
 
 constructionCheckTest &
-constructionCheckTestPID=$!
+# constructionCheckTestPID=$!
 
 dataCheckTest
 
 viewTest
 
-wait $constructionCheckTestPID
+#wait $constructionCheckTestPID
 
 printf "${GRN}### Tests finished.${OFF}\n"
