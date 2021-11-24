@@ -7,6 +7,7 @@
 package inject
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"fmt"
@@ -257,6 +258,39 @@ func TestInjectTransferUseExecution(t *testing.T) {
 	})
 	require.NoError(err)
 	checkHash(ret.ActionHash, t)
+}
+
+func TestGetTransactionLog(t *testing.T) {
+	InContractTransfer := common.Hash{}
+	BucketWithdrawAmount := hash.BytesToHash256([]byte("withdrawAmount"))
+	fmt.Println("TestGetTransactionLog")
+	require := require.New(t)
+	conn, err := grpc.Dial(endpoint, grpc.WithInsecure())
+	require.NoError(err)
+	defer conn.Close()
+	acc, err := account.HexStringToAccount(privateKey)
+	require.NoError(err)
+	c := iotex.NewAuthedClient(iotexapi.NewAPIServiceClient(conn), acc)
+	for i := uint64(1); i < 120; i++ {
+		ret, err := c.API().GetTransactionLogByBlockHeight(context.Background(),
+			&iotexapi.GetTransactionLogByBlockHeightRequest{
+				BlockHeight: i})
+		if err != nil {
+			continue
+		}
+		for _, trans := range ret.GetTransactionLogs().GetLogs() {
+			for _, t := range trans.GetTransactions() {
+				switch {
+				case bytes.Equal(t.GetTopic(), InContractTransfer[:]):
+					fmt.Println(i, "execution", t.Sender, t.Recipient, t.Amount)
+				case bytes.Equal(t.GetTopic(), BucketWithdrawAmount[:]):
+					fmt.Println(i, "stakewithdraw", t.Sender, t.Recipient, t.Amount)
+				default:
+					fmt.Println(i, "other")
+				}
+			}
+		}
+	}
 }
 
 func injectMultisend(t *testing.T) {
