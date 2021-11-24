@@ -8,9 +8,11 @@ package services
 
 import (
 	"context"
+	"strings"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
 
+	"github.com/iotexproject/iotex-address/address"
 	ic "github.com/iotexproject/iotex-core-rosetta-gateway/iotex-client"
 	"github.com/iotexproject/iotex-proto/golang/iotextypes"
 )
@@ -55,4 +57,16 @@ func IsSupportedConstructionType(typ string) bool {
 		}
 	}
 	return false
+}
+
+func ConvertToIotexAddress(addr string) (string, error) {
+	addr = strings.TrimSpace(addr)
+	if len(addr) > 2 && (addr[:2] == "0x" || addr[:2] == "0X") {
+		add, err := address.FromHex(addr)
+		if err != nil {
+			return "", err
+		}
+		return add.String(), nil
+	}
+	return addr, nil
 }

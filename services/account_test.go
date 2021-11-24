@@ -28,7 +28,7 @@ func testConfig() *config.Config {
 			Port:           "8080",
 			Endpoint:       testServerAddr(),
 			SecureEndpoint: false,
-			RosettaVersion: "1.3.5",
+			RosettaVersion: "1.4.10",
 		},
 		KeepNoneTxAction: false,
 	}
@@ -47,12 +47,6 @@ func TestAccountAPIService_AccountBalance(t *testing.T) {
 				Decimals: 18,
 			},
 		}
-		coin = &types.Coin{
-			CoinIdentifier: &types.CoinIdentifier{
-				Identifier: "IOTX",
-			},
-			Amount: amount,
-		}
 		networkIdentifier = &types.NetworkIdentifier{
 			Blockchain: "IoTeX",
 			Network:    "testnet",
@@ -60,7 +54,6 @@ func TestAccountAPIService_AccountBalance(t *testing.T) {
 		ret = &types.AccountBalanceResponse{
 			BlockIdentifier: block,
 			Balances:        []*types.Amount{amount},
-			Coins:           []*types.Coin{coin},
 		}
 
 		require = require.New(t)

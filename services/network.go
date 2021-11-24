@@ -36,10 +36,11 @@ func (s *networkAPIService) NetworkList(
 	request *types.MetadataRequest,
 ) (*types.NetworkListResponse, *types.Error) {
 	return &types.NetworkListResponse{
-		NetworkIdentifiers: []*types.NetworkIdentifier{{
-			Blockchain: s.client.GetConfig().NetworkIdentifier.Blockchain,
-			Network:    s.client.GetConfig().NetworkIdentifier.Network,
-		},
+		NetworkIdentifiers: []*types.NetworkIdentifier{
+			{
+				Blockchain: s.client.GetConfig().NetworkIdentifier.Blockchain,
+				Network:    s.client.GetConfig().NetworkIdentifier.Network,
+			},
 		},
 	}, nil
 }

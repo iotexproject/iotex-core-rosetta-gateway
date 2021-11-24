@@ -22,6 +22,8 @@ function constructionCheckTest() {
   sleep 1
 
   ## TODO change this to sub process, sleep 1s, may not be right
+  #  SEND_TO=$(grep -o "Did you forget to fund? \[\w\+\]" rosetta-cli.log | rev | cut -d ']' -f2 | cut -d '[' -f1 | rev | head -n1)
+
   SEND_TO=$(grep -o "Waiting for funds on \w\+" rosetta-cli.log | rev | cut -d' ' -f 1 | rev)
   cd $ROSETTA_PATH/tests/inject
   printf "${GRN}### Starting transfer, send to: ${SEND_TO}${OFF}\n"
@@ -68,6 +70,7 @@ function startServer(){
   sleep 3
 
   printf "${GRN}### Starting the Rosetta gateway...${OFF}\n"
+  ConfigPath=$ROSETTA_PATH/tests/gateway_config.yaml
   GW="iotex-core-rosetta-gateway"
   ${GW} &
   sleep 3
@@ -78,12 +81,12 @@ printf "${GRN}### Start testing${OFF}\n"
 startServer
 
 constructionCheckTest &
-constructionCheckTestPID=$!
+# constructionCheckTestPID=$!
 
 dataCheckTest
 
 viewTest
 
-wait $constructionCheckTestPID
+#wait $constructionCheckTestPID
 
 printf "${GRN}### Tests finished.${OFF}\n"

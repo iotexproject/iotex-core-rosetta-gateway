@@ -1,4 +1,4 @@
-FROM golang:1.14-buster
+FROM golang:1.17-buster
 ENV GO111MODULE=on
 
 ARG ROSETTA_CLI_RELEASE="0.4.1"
@@ -10,7 +10,7 @@ RUN mkdir -p /usr/local/build-rosetta-cli && \
     cp rosetta-cli /usr/local/bin/rosetta-cli && \
     cd / && rm -rf /usr/local/build-rosetta-cli
 
-ARG CORE_VERSION="r1.1"
+ARG CORE_VERSION="r1.6"
 RUN git clone --single-branch --branch $CORE_VERSION https://github.com/iotexproject/iotex-core /usr/local/build-core && \
     cd /usr/local/build-core && \
     make clean build && \

@@ -1,6 +1,7 @@
 chain:
   chainDBPath: chain.db
   trieDBPath: trie.db
+  trieDBPatchFile: ""
   indexDBPath: index.db
   bloomfilterIndexDBPath: bloomfilter.index.db
   candidateIndexDBPath: candidate.index.db
@@ -11,3 +12,4 @@ chain:
 system:
   systemLogDBPath: systemlog.db
   httpStatsPort: 8081
+  httpAdminPort: 0

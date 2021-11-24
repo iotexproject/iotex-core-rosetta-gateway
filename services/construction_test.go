@@ -30,8 +30,10 @@ func TestConstructionAPIService_ConstructionCombine(t *testing.T) {
 		}
 		signature = &types.Signature{
 			SigningPayload: &types.SigningPayload{
-				Address: account.Address,
-				Bytes:   []byte("blah"),
+				AccountIdentifier: &types.AccountIdentifier{
+					Address: account.Address,
+				},
+				Bytes: []byte("blah"),
 			},
 			PublicKey:     publicKey,
 			SignatureType: types.Ed25519,
@@ -68,7 +70,11 @@ func TestConstructionAPIService_ConstructionDerive(t *testing.T) {
 		ctrl    = gomock.NewController(t)
 		cli     = mock_client.NewMockIoTexClient(ctrl)
 		clt     = NewConstructionAPIService(cli)
-		ret     = &types.ConstructionDeriveResponse{Address: "io13rjq2c07mqhe8sdd7nf9a4vcmnyk9mn72hu94e"}
+		ret     = &types.ConstructionDeriveResponse{
+			AccountIdentifier: &types.AccountIdentifier{
+				Address: "io13rjq2c07mqhe8sdd7nf9a4vcmnyk9mn72hu94e",
+			},
+		}
 	)
 	pubKey, err := hex.DecodeString("04403d3c0dbd3270ddfc248c3df1f9aafd60f1d8e7456961c9ef26292262cc68f0ea9690263bef9e197a38f06026814fc70912c2b98d2e90a68f8ddc5328180a01")
 	require.NoError(err)
@@ -131,16 +137,9 @@ func TestConstructionAPIService_ConstructionMetadata(t *testing.T) {
 				Decimals: 18,
 			},
 		}
-		coin = &types.Coin{
-			CoinIdentifier: &types.CoinIdentifier{
-				Identifier: "IOTX",
-			},
-			Amount: amount,
-		}
 		accountBalanceResp = &types.AccountBalanceResponse{
 			BlockIdentifier: block,
 			Balances:        []*types.Amount{amount},
-			Coins:           []*types.Coin{coin},
 			Metadata:        map[string]interface{}{ic.NonceKey: nonce},
 		}
 
@@ -273,7 +272,11 @@ func TestConstructionAPIService_ConstructionParse(t *testing.T) {
 							Metadata:   nil,
 						},
 					},
-					Signers: []string{"io1mflp9m6hcgm2qcghchsdqj3z3eccrnekx9p0ms"},
+					AccountIdentifierSigners: []*types.AccountIdentifier{
+						{
+							Address: "io1mflp9m6hcgm2qcghchsdqj3z3eccrnekx9p0ms",
+						},
+					},
 					Metadata: map[string]interface{}{
 						"gasLimit": uint64(20010),
 						"gasPrice": uint64(11000000000000000000),
@@ -312,7 +315,9 @@ func TestConstructionAPIService_ConstructionPayloads(t *testing.T) {
 			UnsignedTransaction: "0a61100a18aa9c012214313130303030303030303030303030303030303052430a16313031303030303030303030303030303030303030301229696f316a6830656b6d63637977666b6d6a3765387173757a7375706e6c6b337735333337686a6a67321229696f316d666c70396d366863676d327163676863687364716a337a33656363726e656b783970306d73",
 			Payloads: []*types.SigningPayload{
 				{
-					Address: "io1mflp9m6hcgm2qcghchsdqj3z3eccrnekx9p0ms",
+					AccountIdentifier: &types.AccountIdentifier{
+						Address: "io1mflp9m6hcgm2qcghchsdqj3z3eccrnekx9p0ms",
+					},
 					Bytes: []byte{0x06, 0x63, 0x95, 0xdb, 0xab, 0xbe, 0x8d, 0x30, 0x1e, 0x00, 0xf8, 0x5b, 0x8f, 0xa8, 0xb9, 0x3f,
 						0x90, 0xfd, 0x33, 0x8a, 0x8d, 0x7a, 0x52, 0x43, 0x7f, 0xa1, 0x21, 0x3a, 0xa1, 0x41, 0x9d, 0x8b},
 					SignatureType: "ecdsa_recovery",
