@@ -7,11 +7,11 @@ require (
 	github.com/coinbase/rosetta-sdk-go v0.7.0
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2
-	github.com/iotexproject/go-pkgs v0.1.6
-	github.com/iotexproject/iotex-address v0.2.5
+	github.com/iotexproject/go-pkgs v0.1.10
+	github.com/iotexproject/iotex-address v0.2.6
 	github.com/iotexproject/iotex-antenna-go/v2 v2.5.1
 	github.com/iotexproject/iotex-core v1.6.0
-	github.com/iotexproject/iotex-proto v0.5.2
+	github.com/iotexproject/iotex-proto v0.5.4
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cast v1.4.1
 	github.com/stretchr/testify v1.7.0

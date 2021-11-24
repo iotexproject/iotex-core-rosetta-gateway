@@ -61,9 +61,7 @@ func IsSupportedConstructionType(typ string) bool {
 
 func ConvertToIotexAddress(addr string) string {
 	addr = strings.TrimSpace(addr)
-	if len(addr) == 41 && addr[:2] == "io" {
-		return addr
-	} else if len(addr) > 2 && (addr[:2] == "0x" || addr[:2] == "0X") {
+	if len(addr) > 2 && (addr[:2] == "0x" || addr[:2] == "0X") {
 		add, _ := address.FromHex(addr)
 		addr = add.String()
 	}
