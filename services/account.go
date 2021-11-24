@@ -35,8 +35,10 @@ func (s *accountAPIService) AccountBalance(
 	if terr != nil {
 		return nil, terr
 	}
-	// TODO fix this when we have archive mode
-	addr := ConvertToIotexAddress(request.AccountIdentifier.Address)
+	addr, err := ConvertToIotexAddress(request.AccountIdentifier.Address)
+	if err != nil {
+		return nil, ErrInvalidAccountAddress
+	}
 	resp, err := s.client.GetAccount(ctx, 0, addr)
 	if err != nil {
 		return nil, ErrUnableToGetAccount

@@ -59,11 +59,14 @@ func IsSupportedConstructionType(typ string) bool {
 	return false
 }
 
-func ConvertToIotexAddress(addr string) string {
+func ConvertToIotexAddress(addr string) (string, error) {
 	addr = strings.TrimSpace(addr)
 	if len(addr) > 2 && (addr[:2] == "0x" || addr[:2] == "0X") {
-		add, _ := address.FromHex(addr)
-		addr = add.String()
+		add, err := address.FromHex(addr)
+		if err != nil {
+			return "", err
+		}
+		return add.String(), nil
 	}
-	return addr
+	return addr, nil
 }
