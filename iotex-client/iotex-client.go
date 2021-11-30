@@ -454,10 +454,11 @@ func (c *grpcIoTexClient) GetMemPool(ctx context.Context, actionHashes []string)
 }
 
 func (c *grpcIoTexClient) getMemPool(ctx context.Context, actionHashes []string) (ret []*types.TransactionIdentifier, err error) {
-	request := &iotexapi.GetActPoolActionsRequest{
-		ActionHashes: actionHashes,
-	}
+	request := &iotexapi.GetActPoolActionsRequest{}
 
+	if len(actionHashes) > 0 {
+		request.ActionHashes = actionHashes
+	}
 	resp, err := c.client.GetActPoolActions(ctx, request)
 	if err != nil {
 		return nil, err
