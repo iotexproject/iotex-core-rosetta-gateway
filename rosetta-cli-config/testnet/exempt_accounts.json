@@ -1,0 +1,20 @@
+[
+  {
+    "account_identifier": {
+      "address":"io000000000000000000000000stakingprotocol"
+    },
+    "currency":{
+      "symbol":"IOTX",
+      "decimals":18
+    }
+  },
+  {
+    "account_identifier": {
+      "address":"io0000000000000000000000rewardingprotocol"
+    },
+    "currency":{
+      "symbol":"IOTX",
+      "decimals":18
+    }
+  }
+]
