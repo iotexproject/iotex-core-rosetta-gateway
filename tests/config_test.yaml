@@ -1,4 +1,6 @@
 chain:
+  id: 2
+  evmNetworkID: 4690
   chainDBPath: chain.db
   trieDBPath: trie.db
   trieDBPatchFile: ""

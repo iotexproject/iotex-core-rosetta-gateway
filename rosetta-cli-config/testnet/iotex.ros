@@ -17,7 +17,7 @@ request_funds(1){
     loaded_account = find_balance({
       "account_identifier": {{random_account.account_identifier}},
       "minimum_balance":{
-        "value": "10000000000000000",
+        "value": "0",
         "currency": {{currency}}
       }
     });
@@ -41,7 +41,7 @@ create_account(1){
   }
 }
 
-transfer(1){
+transfer(10){
   transfer{
     transfer.network = {"network":"testnet", "blockchain":"IoTeX"};
     currency = {"symbol":"IOTX", "decimals":18};
@@ -53,7 +53,7 @@ transfer(1){
     });
 
     // Set the recipient_amount as some value <= sender.balance-max_fee
-    max_fee = "1000000000000";
+    max_fee = "84000000000000";
     available_amount = {{sender.balance.value}} - {{max_fee}};
     recipient_amount = random_number({"minimum": "1", "maximum": {{available_amount}}});
     print_message({"recipient_amount":{{recipient_amount}}});
@@ -73,7 +73,7 @@ transfer(1){
     transfer.operations = [
       {
         "operation_identifier":{"index":0},
-        "type":"TRANSFER",
+        "type":"NATIVE_TRANSFER",
         "account":{{sender.account_identifier}},
         "amount":{
           "value":{{sender_amount}},
@@ -82,7 +82,7 @@ transfer(1){
       },
       {
         "operation_identifier":{"index":1},
-        "type":"TRANSFER",
+        "type":"NATIVE_TRANSFER",
         "account":{{recipient.account_identifier}},
         "amount":{
           "value":{{recipient_amount}},
@@ -93,12 +93,14 @@ transfer(1){
   }
 }
 
-return_funds(1){
+return_funds(10){
   transfer{
     transfer.network = {"network":"testnet", "blockchain":"IoTeX"};
     currency = {"symbol":"IOTX", "decimals":18};
     max_fee = "1000000000000";
+    prefunded_account = {"address": "io1a7tc5g89qtrujgj2axg89fe54cq9jn7smkknz4"};
     sender = find_balance({
+      "not_account_identifier":[{{prefunded_account}}],
       "minimum_balance":{
         "value": {{max_fee}},
         "currency": {{currency}}
@@ -110,13 +112,11 @@ return_funds(1){
     print_message({"available_amount":{{available_amount}}});
     sender_amount = 0 - {{available_amount}};
 
-    // Provide a static address as the recipient and construct operations
-    faucet = {"address":"c18273C95DE42Eb979E99f8842aA0cF7343Cb42e"};
     transfer.confirmation_depth = "1";
     transfer.operations = [
       {
         "operation_identifier":{"index":0},
-        "type":"TRANSFER",
+        "type":"NATIVE_TRANSFER",
         "account":{{sender.account_identifier}},
         "amount":{
           "value":{{sender_amount}},
@@ -125,8 +125,8 @@ return_funds(1){
       },
       {
         "operation_identifier":{"index":1},
-        "type":"TRANSFER",
-        "account":{{faucet}},
+        "type":"NATIVE_TRANSFER",
+        "account":{{prefunded_account}},
         "amount":{
           "value":{{available_amount}},
           "currency":{{currency}}

@@ -44,6 +44,7 @@
      "historical_balance_enabled": false,
      "reconciliation_disabled": true,
      "inactive_discrepency_search_disabled": true,
+     "initial_balance_fetch_disabled": true,
      "bootstrap_balances": "bootstrap_balances.json",
      "exempt_accounts": "exempt_accounts.json",
      "start_index": 10000000,

@@ -20,6 +20,7 @@ import (
 	"github.com/iotexproject/go-pkgs/crypto"
 	"github.com/iotexproject/go-pkgs/hash"
 	"github.com/iotexproject/iotex-address/address"
+	"github.com/iotexproject/iotex-core/action"
 	"github.com/iotexproject/iotex-proto/golang/iotextypes"
 
 	ic "github.com/iotexproject/iotex-core-rosetta-gateway/iotex-client"
@@ -272,6 +273,7 @@ func estimateGasAction(opts *metadataInputOptions) (*iotextypes.Action, *types.E
 	rawPubKey := rawPrivKey.PubKey()
 	act := &iotextypes.Action{
 		SenderPubKey: rawPubKey.SerializeUncompressed(),
+		Signature:    action.ValidSig,
 	}
 
 	switch opts.typ {
