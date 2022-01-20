@@ -19,24 +19,23 @@ function constructionCheckTest() {
   printf "${GRN}### Run rosetta-cli check:construction${OFF}\n"
   rosetta-cli check:construction --configuration-file testing/iotex-testing.json >rosetta-cli.log 2>&1 &
   constructionCheckPID=$!
-  printf "${GRN}### PID: ${constructionCheckPID}${OFF}\n"
-  sleep 3
-
+  printf "${GRN}### constructionCheckPID: ${constructionCheckPID}${OFF}\n"
+  
+  sleep 5
   ## TODO change this to sub process, sleep 1s, may not be right
   #  SEND_TO=$(grep -o "Did you forget to fund? \[\w\+\]" rosetta-cli.log | rev | cut -d ']' -f2 | cut -d '[' -f1 | rev | head -n1)
 
-  SEND_TO=$(grep -o "Please fund the address \[\w\+\]" rosetta-cli.log | rev | cut -d ']' -f2 | cut -d '[' -f1 | rev | awk 'END{print $1}')
+  SEND_TO="$(grep -o "Please fund the address \[\w\+\]" rosetta-cli.log |cut -d '[' -f2|cut -d ']' -f1|head -1)"
   cd $ROSETTA_PATH/tests/inject
   printf "${GRN}### Starting transfer, send to: ${SEND_TO}${OFF}\n"
   ROSETTA_SEND_TO=$SEND_TO go test -test.run TestInjectTransfer10IOTX
   printf "${GRN}### Finished transfer funds${OFF}\n"
 
-  sleep 30
+  wait $constructionCheckPID
   cd $ROSETTA_PATH/rosetta-cli-config
   ## TODO change this grep to a sub process, fail this grep in x sec should fail the test
   COUNT=$(grep -c "Transactions Confirmed: 1" rosetta-cli.log)
   printf "${GRN}### Finished check transfer, count: ${COUNT}${OFF}\n"
-  ps -p $constructionCheckPID >/dev/null
   printf "${GRN}### Run rosetta-cli check:construction succeeded${OFF}\n"
 }
 
@@ -82,12 +81,12 @@ printf "${GRN}### Start testing${OFF}\n"
 startServer
 
 constructionCheckTest &
-# constructionCheckTestPID=$!
+constructionCheckTestPID=$!
 
 dataCheckTest
 
 viewTest
 
-#wait $constructionCheckTestPID
+wait $constructionCheckTestPID
 
 printf "${GRN}### Tests finished.${OFF}\n"

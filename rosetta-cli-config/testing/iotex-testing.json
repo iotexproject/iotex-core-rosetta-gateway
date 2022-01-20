@@ -29,7 +29,6 @@
   "data": {
     "historical_balance_enabled": false,
     "reconciliation_disabled": false,
-    "inactive_discrepency_search_disabled": true,
     "initial_balance_fetch_disabled": true,
     "exempt_accounts": "exempt_accounts.json",
     "bootstrap_balances": "bootstrap_balances.json",
