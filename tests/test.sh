@@ -49,8 +49,8 @@ function dataCheckTest() {
   printf "${GRN}### Inject some actions...${OFF}\n"
   go test
 
-  sleep 10 #wait for the last candidate action
-  ps -p $dataCheckPID >/dev/null
+  sleep 10
+  wait $dataCheckPID
   printf "${GRN}### Run rosetta-cli check:data succeeded${OFF}\n"
 }
 
