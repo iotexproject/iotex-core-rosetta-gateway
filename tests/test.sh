@@ -24,7 +24,7 @@ function constructionCheckTest() {
   ## TODO change this to sub process, sleep 1s, may not be right
   #  SEND_TO=$(grep -o "Did you forget to fund? \[\w\+\]" rosetta-cli.log | rev | cut -d ']' -f2 | cut -d '[' -f1 | rev | head -n1)
 
-  SEND_TO=$(grep -o "Please fund the address \[\w\+\]" rosetta-cli.log | rev | cut -d ']' -f2 | cut -d '[' -f1 | rev | head -n1)
+  SEND_TO=$(grep -o "Please fund the address \[\w\+\]" rosetta-cli.log | rev | cut -d ']' -f2 | cut -d '[' -f1 | rev | awk 'END{print $1}')
   cd $ROSETTA_PATH/tests/inject
   printf "${GRN}### Starting transfer, send to: ${SEND_TO}${OFF}\n"
   ROSETTA_SEND_TO=$SEND_TO go test -test.run TestInjectTransfer10IOTX
