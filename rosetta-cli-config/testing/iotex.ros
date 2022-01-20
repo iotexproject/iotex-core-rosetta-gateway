@@ -17,7 +17,7 @@ request_funds(1){
     loaded_account = find_balance({
       "account_identifier": {{random_account.account_identifier}},
       "minimum_balance":{
-        "value": "10000000000000000",
+        "value": "0",
         "currency": {{currency}}
       }
     });
@@ -41,19 +41,19 @@ create_account(1){
   }
 }
 
-transfer(10){
+simple_transfer(10){
   transfer{
     transfer.network = {"network":"testnet", "blockchain":"IoTeX"};
     currency = {"symbol":"IOTX", "decimals":18};
     sender = find_balance({
       "minimum_balance":{
-        "value": "10000000000000000",
+        "value": "10000000000000000", // 0.01 IOTX
         "currency": {{currency}}
       }
     });
 
     // Set the recipient_amount as some value <= sender.balance-max_fee
-    max_fee = "84000000000000";
+    max_fee = "4725000000000000"; // 0.004725 IOTX
     available_amount = {{sender.balance.value}} - {{max_fee}};
     recipient_amount = random_number({"minimum": "1", "maximum": {{available_amount}}});
     print_message({"recipient_amount":{{recipient_amount}}});
@@ -73,7 +73,7 @@ transfer(10){
     transfer.operations = [
       {
         "operation_identifier":{"index":0},
-        "type":"CALL",
+        "type":"NATIVE_TRANSFER",
         "account":{{sender.account_identifier}},
         "amount":{
           "value":{{sender_amount}},
@@ -82,54 +82,10 @@ transfer(10){
       },
       {
         "operation_identifier":{"index":1},
-        "type":"CALL",
+        "type":"NATIVE_TRANSFER",
         "account":{{recipient.account_identifier}},
         "amount":{
           "value":{{recipient_amount}},
-          "currency":{{currency}}
-        }
-      }
-    ];
-  }
-}
-
-return_funds(10){
-  // TODO: add suggested fee dry run to ensure account fully cleared
-  transfer{
-    transfer.network = {"network":"testnet", "blockchain":"IoTeX"};
-    currency = {"symbol":"IOTX", "decimals":18};
-    max_fee = "84000000000000";
-    sender = find_balance({
-      "minimum_balance":{
-        "value": {{max_fee}},
-        "currency": {{currency}}
-      }
-    });
-    
-    // Set the recipient_amount as some sender.balance-max_fee
-    available_amount = {{sender.balance.value}} - {{max_fee}};
-    print_message({"available_amount":{{available_amount}}});
-    sender_amount = 0 - {{available_amount}};
-
-    // Provide a static address as the recipient and construct operations
-    faucet = {"address":"0xb41B39479a525AB69e38c701A713D98E3074252c"};
-    transfer.confirmation_depth = "1";
-    transfer.operations = [
-      {
-        "operation_identifier":{"index":0},
-        "type":"CALL",
-        "account":{{sender.account_identifier}},
-        "amount":{
-          "value":{{sender_amount}},
-          "currency":{{currency}}
-        }
-      },
-      {
-        "operation_identifier":{"index":1},
-        "type":"CALL",
-        "account":{{faucet}},
-        "amount":{
-          "value":{{available_amount}},
           "currency":{{currency}}
         }
       }

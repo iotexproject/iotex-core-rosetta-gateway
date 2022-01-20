@@ -24,7 +24,7 @@ function constructionCheckTest() {
   ## TODO change this to sub process, sleep 1s, may not be right
   #  SEND_TO=$(grep -o "Did you forget to fund? \[\w\+\]" rosetta-cli.log | rev | cut -d ']' -f2 | cut -d '[' -f1 | rev | head -n1)
 
-  SEND_TO=$(grep -o "Waiting for funds on \w\+" rosetta-cli.log | rev | cut -d' ' -f 1 | rev)
+  SEND_TO=$(grep -o "Please fund the address \[\w\+\]" rosetta-cli.log | rev | cut -d ']' -f2 | cut -d '[' -f1 | rev | head -n1)
   cd $ROSETTA_PATH/tests/inject
   printf "${GRN}### Starting transfer, send to: ${SEND_TO}${OFF}\n"
   ROSETTA_SEND_TO=$SEND_TO go test -test.run TestInjectTransfer10IOTX
@@ -56,8 +56,8 @@ function dataCheckTest() {
 
 function viewTest(){
   cd $ROSETTA_PATH/rosetta-cli-config
-  printf "${GRN}### Run rosetta-cli view:account and view:block...${OFF}\n"
-  rosetta-cli view:account '{"address":"io1ph0u2psnd7muq5xv9623rmxdsxc4uapxhzpg02"}' --configuration-file testing/iotex-testing.json
+  printf "${GRN}### Run rosetta-cli view:balance and view:block...${OFF}\n"
+  rosetta-cli view:balance '{"address":"io1ph0u2psnd7muq5xv9623rmxdsxc4uapxhzpg02"}' --configuration-file testing/iotex-testing.json
   rosetta-cli view:block 10 --configuration-file testing/iotex-testing.json
   printf "${GRN}### Run rosetta-cli view succeeded${OFF}\n"
 }
