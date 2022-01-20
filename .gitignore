@@ -17,6 +17,4 @@
 docker/deploy/check-data
 tests/check-data
 iotex-core-rosetta-gateway
-data/check-data/
-data/check-construction/
 *.db 

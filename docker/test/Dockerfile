@@ -1,7 +1,7 @@
 FROM golang:1.17-buster
 ENV GO111MODULE=on
 
-ARG ROSETTA_CLI_RELEASE="0.4.1"
+ARG ROSETTA_CLI_RELEASE="0.7.2"
 RUN mkdir -p /usr/local/build-rosetta-cli && \
     wget --quiet --show-progress --progress=bar:force:noscroll -O /usr/local/build-rosetta-cli/rosetta-cli-${ROSETTA_CLI_RELEASE}.tar.gz https://github.com/coinbase/rosetta-cli/archive/v${ROSETTA_CLI_RELEASE}.tar.gz && \
     cd /usr/local/build-rosetta-cli && \
