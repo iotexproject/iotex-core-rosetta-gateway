@@ -19,7 +19,8 @@ function constructionCheckTest() {
   printf "${GRN}### Run rosetta-cli check:construction${OFF}\n"
   rosetta-cli check:construction --configuration-file testing/iotex-testing.json >rosetta-cli.log 2>&1 &
   constructionCheckPID=$!
-  sleep 1
+  printf "${GRN}### PID: ${constructionCheckPID}${OFF}\n"
+  sleep 3
 
   ## TODO change this to sub process, sleep 1s, may not be right
   #  SEND_TO=$(grep -o "Did you forget to fund? \[\w\+\]" rosetta-cli.log | rev | cut -d ']' -f2 | cut -d '[' -f1 | rev | head -n1)
