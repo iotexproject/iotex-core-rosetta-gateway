@@ -1,0 +1,22 @@
+{
+    "accounts": [
+      {
+        "address": "io1a7tc5g89qtrujgj2axg89fe54cq9jn7smkknz4",
+        "ethAddress": "0xef978a20e502c7c9224ae99072a734ae00594fd0",
+        "privateKey": "85a9de76d4edb3b0cf5a0fb46abd6dac873667f1e90575a9a6789f11c3986eb6",
+        "publicKey": "046849c6e31a6c7561d47f8568d0b94da725bb50e584012b3389091113f24f5e8d2392b73ff5014bf3ae14f9369905f821f4a918cb481e91b868fdc4201c0c30ce"
+      },
+      {
+        "address": "io1dw3epmteyu03gqxksx382738v0pg89z03ynnlf",
+        "ethAddress": "0x6ba390ed79271f1400d681a2757a2763c283944f",
+        "privateKey": "5736dbfcd2c8363a39eda81f4970c10410ac9e93ba92b1d8dd083bfb013dbc4f",
+        "publicKey": "04eec780018e03698027a6713ba2763d69b923b53dab2b3d8c22dbc3713e510c29fb9837d2abe628d1657e810e1210765f6e08a1f285391260261786e8f60c6275"
+      },
+      {
+        "address": "io1dtpmhw04suv2h80fllt9kl69h677zj6pl63vdx",
+        "ethAddress": "0x6ac3bbb9f58718ab9de9ffd65b7f45bebde14b41",
+        "privateKey": "9fa4cd95563fe75a03701e06638ac311a3cae88ff520301522a7c2b12a655876",
+        "publicKey": "04129dcd0fae815f52454875290ccd5fb5809293327d88a06cde2c8286d7a708d796193a603abeccb7f671e9b6d0237349c7eac389547d670a588fe2d3ba609468"
+      }
+    ]
+  }
