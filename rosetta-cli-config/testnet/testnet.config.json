@@ -4,7 +4,7 @@
      "blockchain": "IoTeX",
      "network": "testnet"
     },
-    "online_url": "http://localhost:8080",
+    "online_url": "http://rosetta.testnet.iotex.one",
     "data_directory": "data/",
     "http_timeout": 300,
     "tip_delay": 300,
