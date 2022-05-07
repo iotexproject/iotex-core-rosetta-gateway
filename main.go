@@ -14,6 +14,7 @@ import (
 	"github.com/coinbase/rosetta-sdk-go/asserter"
 	"github.com/coinbase/rosetta-sdk-go/server"
 	"github.com/coinbase/rosetta-sdk-go/types"
+	icconfig "github.com/iotexproject/iotex-core/config"
 
 	"github.com/iotexproject/iotex-core-rosetta-gateway/config"
 	ic "github.com/iotexproject/iotex-core-rosetta-gateway/iotex-client"
@@ -59,6 +60,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("ERROR: Failed to parse config: %v\n", err)
 	}
+	icconfig.SetEVMNetworkID(cfg.NetworkIdentifier.EvmNetworkID)
 	// Prepare a new gRPC client.
 	client, err := ic.NewIoTexClient(cfg)
 	if err != nil {
