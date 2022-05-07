@@ -8,9 +8,9 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2
 	github.com/iotexproject/go-pkgs v0.1.12-0.20220209063039-b876814568a0
-	github.com/iotexproject/iotex-address v0.2.6
-	github.com/iotexproject/iotex-core v1.2.2-0.20220321232849-f85274e28a56
-	github.com/iotexproject/iotex-proto v0.5.9
+	github.com/iotexproject/iotex-address v0.2.8
+	github.com/iotexproject/iotex-core v1.8.0-rc1
+	github.com/iotexproject/iotex-proto v0.5.10-0.20220415042310-0d4bcef3febf
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cast v1.4.1
 	github.com/stretchr/testify v1.7.0

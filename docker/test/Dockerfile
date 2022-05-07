@@ -10,7 +10,7 @@ RUN mkdir -p /usr/local/build-rosetta-cli && \
     cp rosetta-cli /usr/local/bin/rosetta-cli && \
     cd / && rm -rf /usr/local/build-rosetta-cli
 
-ARG CORE_VERSION="r1.6"
+ARG CORE_VERSION="v1.8.0-rc1"
 RUN git clone --single-branch --branch $CORE_VERSION https://github.com/iotexproject/iotex-core /usr/local/build-core && \
     cd /usr/local/build-core && \
     make clean build && \
