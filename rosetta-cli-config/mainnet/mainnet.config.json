@@ -23,7 +23,6 @@
       "interesting_accounts": "interesting_accounts.json",
       "inactive_discrepency_search_disabled": false,
       "balance_tracking_disabled": false,
-      "exempt_accounts": "exempt_accounts.json",
       "bootstrap_balances": "bootstrap_balances.json",
       "end_conditions": {
          "tip": true,
