@@ -1,0 +1,33 @@
+
+{
+    "network": {
+     "blockchain": "IoTeX",
+     "network": "mainnet"
+    },
+    "online_url": "http://rosetta.iotex.one",
+    "data_directory": "data/",
+    "http_timeout": 300,
+    "tip_delay": 300,
+   "data": {
+      "active_reconciliation_concurrency": 16,
+      "inactive_reconciliation_concurrency": 4,
+      "inactive_reconciliation_frequency": 250,
+      "log_blocks": true,
+      "log_transactions": true,
+      "log_balance_changes": true,
+      "log_reconciliations": false,
+      "ignore_reconciliation_error": false,
+      "historical_balance_enabled": false,
+      "reconciliation_disabled": false,
+      "initial_balance_fetch_disabled": true,
+      "interesting_accounts": "interesting_accounts.json",
+      "inactive_discrepency_search_disabled": false,
+      "balance_tracking_disabled": false,
+      "exempt_accounts": "exempt_accounts.json",
+      "bootstrap_balances": "bootstrap_balances.json",
+      "end_conditions": {
+         "tip": true,
+         "duration": 100
+      }
+    }
+   }
