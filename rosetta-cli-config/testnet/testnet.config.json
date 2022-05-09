@@ -9,6 +9,7 @@
     "http_timeout": 300,
     "tip_delay": 300,
    "data": {
+      "results_output_file": "result.log",
       "active_reconciliation_concurrency": 16,
       "inactive_reconciliation_concurrency": 4,
       "inactive_reconciliation_frequency": 250,
@@ -26,6 +27,7 @@
       "exempt_accounts": "exempt_accounts.json",
       "bootstrap_balances": "bootstrap_balances.json",
       "end_conditions": {
+         "tip": true,
          "duration": 300
       }
     }
