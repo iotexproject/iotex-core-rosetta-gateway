@@ -23,7 +23,7 @@ import (
 
 	"github.com/iotexproject/go-pkgs/hash"
 	"github.com/iotexproject/iotex-address/address"
-	"github.com/iotexproject/iotex-antenna-go/v2/iotex"
+	"github.com/iotexproject/iotex-core/action"
 	"github.com/iotexproject/iotex-proto/golang/iotexapi"
 	"github.com/iotexproject/iotex-proto/golang/iotextypes"
 
@@ -320,11 +320,13 @@ func (c *grpcIoTexClient) getRawBlock(ctx context.Context, height int64) (action
 	hashSlice = make([]string, 0)
 	blk := getRawBlocksRes.GetBlocks()[0]
 	for _, act := range blk.GetBlock().GetBody().GetActions() {
-		var hashArray hash.Hash256
-		hashArray, err = iotex.ActionHash(act, c.cfg.NetworkIdentifier.EvmNetworkID)
+		var selp action.SealedEnvelope
+		err = selp.LoadProto(act)
 		if err != nil {
 			return
 		}
+		hashArray, _ := selp.Hash()
+
 		h := hex.EncodeToString(hashArray[:])
 		actionMap[h] = act
 		hashSlice = append(hashSlice, h)
