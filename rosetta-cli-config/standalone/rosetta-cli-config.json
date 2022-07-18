@@ -1,0 +1,67 @@
+{
+    "network": {
+        "blockchain": "IoTeX",
+        "network": "testnet"
+    },
+    "data_directory": "/tmp/rosetta/cli-data",
+    "http_timeout": 300,
+    "max_retries": 15,
+    "max_online_connections": 500,
+    "max_sync_concurrency": 64,
+    "tip_delay": 120,
+    "compression_disabled": true,
+    "memory_limit_disabled": true,
+    "construction": {
+        "offline_url": "http://localhost:8080",
+        "max_offline_connections": 5,
+        "stale_depth": 5,
+        "broadcast_limit": 1,
+        "ignore_broadcast_failures": true,
+        "clear_broadcasts": true,
+        "broadcast_behind_tip": true,
+        "block_broadcast_limit": 5,
+        "rebroadcast_all": false,
+        "constructor_dsl_file": "testnet.ros",
+        "end_conditions": {
+           "create_account": 10,
+           "simple_transfer": 10
+        },
+        "prefunded_accounts": [
+            {
+             "privkey": "85a9de76d4edb3b0cf5a0fb46abd6dac873667f1e90575a9a6789f11c3986eb6",
+             "account_identifier": {
+              "address": "io1a7tc5g89qtrujgj2axg89fe54cq9jn7smkknz4"
+             },
+             "curve_type": "secp256k1",
+             "currency": {
+                "symbol":"IOTX",
+                "decimals":18
+             }
+            }
+        ]
+    },
+    "data": {
+        "active_reconciliation_concurrency": 16,
+        "inactive_reconciliation_concurrency": 4,
+        "inactive_reconciliation_frequency": 250,
+        "log_blocks": true,
+        "log_transactions": true,
+        "log_balance_changes": true,
+        "log_reconciliations": false,
+        "ignore_reconciliation_error": false,
+        "historical_balance_enabled": false,
+        "reconciliation_disabled": false,
+        "initial_balance_fetch_disabled": true,
+        "interesting_accounts": "",
+        "inactive_discrepency_search_disabled": false,
+        "balance_tracking_disabled": false,
+        "exempt_accounts": "exempt_accounts.json",
+        "bootstrap_balances": "bootstrap_balances.json",
+        "end_conditions": {
+            "reconciliation_coverage": {
+                "coverage": 0.95,
+                "from_tip": true
+            }
+        }
+    }
+}

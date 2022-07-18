@@ -1,0 +1,52 @@
+[
+  {
+    "account_identifier": {
+      "address":"io1mflp9m6hcgm2qcghchsdqj3z3eccrnekx9p0ms"
+    },
+    "currency":{
+      "symbol":"IOTX",
+      "decimals":18
+    },
+    "value": "1000000000000000000000000000"
+  },
+  {
+    "account_identifier": {
+      "address":"io1vdtfpzkwpyngzvx7u2mauepnzja7kd5rryp0sg"
+    },
+    "currency":{
+      "symbol":"IOTX",
+      "decimals":18
+    },
+    "value": "7000000000000000000000000000"
+  },
+  {
+    "account_identifier": {
+      "address":"io1a7tc5g89qtrujgj2axg89fe54cq9jn7smkknz4"
+    },
+    "currency":{
+      "symbol":"IOTX",
+      "decimals":18
+    },
+    "value": "800000000000000000000000000"
+  },
+  {
+    "account_identifier": {
+      "address":"io19sj34t67smv0l3u3wq8qgvltzva730zsd27n56"
+    },
+    "currency":{
+      "symbol":"IOTX",
+      "decimals":18
+    },
+    "value": "800000000000000000000000000"
+  },
+  {
+    "account_identifier": {
+      "address":"io1zydewu5993fxx8mu0km65609ss36ckgwpp25p3"
+    },
+    "currency":{
+      "symbol":"IOTX",
+      "decimals":18
+    },
+    "value": "80000000000000000000000000000000000"
+  }
+]
