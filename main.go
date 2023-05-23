@@ -47,7 +47,8 @@ func NewBlockchainRouter(client ic.IoTexClient) (http.Handler, error) {
 	accountAPIController := server.NewAccountAPIController(services.NewAccountAPIService(client), asserter)
 	blockAPIController := server.NewBlockAPIController(services.NewBlockAPIService(client), asserter)
 	constructionAPIController := server.NewConstructionAPIController(services.NewConstructionAPIService(client), asserter)
-	r := server.NewRouter(networkAPIController, accountAPIController, blockAPIController, constructionAPIController)
+	mempoolAPIController := server.NewMempoolAPIController(services.NewMemPoolAPIService(client), asserter)
+	r := server.NewRouter(networkAPIController, accountAPIController, blockAPIController, constructionAPIController, mempoolAPIController)
 	return server.CorsMiddleware(server.LoggerMiddleware(r)), nil
 }
 
