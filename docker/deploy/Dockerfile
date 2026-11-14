@@ -9,9 +9,9 @@ RUN git clone --single-branch --branch $CORE_VERSION https://github.com/iotexpro
     cp ./bin/server /usr/local/bin/iotex-server  && \
     cd / && rm -rf /usr/local/build-core
 
-ARG POLL_META_URI="https://storage.googleapis.com/blockchain-golden/poll.mainnet.tar.gz"
+ARG POLL_META_URI="https://storage.iotex.io/poll.mainnet.tar.gz"
 RUN mkdir -p /etc/iotex/meta && \
-    curl -L $POLL_META_URI > /etc/iotex/meta/poll.tar.gz
+    curl -fsSL "$POLL_META_URI" -o /etc/iotex/meta/poll.tar.gz
 
 ARG GATEWAY_VERSION="v1.2.0"
 RUN git clone --single-branch --branch $GATEWAY_VERSION https://github.com/iotexproject/iotex-core-rosetta-gateway /usr/local/build-gateway && \
